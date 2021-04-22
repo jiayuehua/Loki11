@@ -1,0 +1,6 @@
+#define Tutorial_VERSION_MAJOR @Tutorial_VERSION_MAJOR@
+#define Tutorial_VERSION_MINOR @Tutorial_VERSION_MINOR@
+#cmakedefine USE_MYMATH
+#cmakedefine HAS_LOG
+#cmakedefine HAS_EXP
+#cmakedefine HAS_ABS
