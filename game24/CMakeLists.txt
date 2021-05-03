@@ -16,5 +16,5 @@ target_link_libraries(
   ${arg} PRIVATE project_options project_warnings fmt::fmt-header-only
                 Threads::Threads   range-v3 range-v3-meta range-v3::meta range-v3-concepts ${Boost_LIBRARIES} )
                    endfunction()
-                   aoc(test)
+                   aoc(stl_with_lambda)
                    aoc(game24)
