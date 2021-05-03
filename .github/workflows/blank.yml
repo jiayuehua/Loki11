@@ -91,9 +91,9 @@ jobs:
 #      - name: 'vcpkg package restore'
 #        shell: 'bash'
 #        run: >
-#          $VCPKG_ROOT/vcpkg install catch2 fmt  --triplet ${{ matrix.triplet }}
-		  - name: ccache
-		    uses: hendrikmuhs/ccache-action@v1.0.4
+#          $VCPKG_ROOT/vcpkg install catch2 fmt  --triplet ${{ matrix.triplet }
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.0.4
 
       - name: 'Run CMake with Ninja'
         uses: lukka/run-cmake@v3
