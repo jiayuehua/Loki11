@@ -15,15 +15,10 @@ jobs:
     strategy:
       matrix:
         
-        vstriplet: ['x64-Debug','WSL-Clang-Debug','WSL-GCC-Debug']
+        vstriplet: ['WSL-Clang-Debug','WSL-GCC-Debug']
                 
 
-        include: #because ccache not support windows yet.
-          #- os: 'windows-2019'
-            #triplet: 'x64-windows'
-            #mono: ''
-            #vstriplet: 'x64-Debug'
-            
+        include:
         
           - os: 'ubuntu-20.04'
             triplet: 'x64-linux'
