@@ -5,7 +5,6 @@
 #include "exprs.h"
 namespace
 {
-
 std::vector<std::vector<std::string>> getAllPerms(std::vector<std::string> v)
 {
   std::vector<std::vector<std::string>> r;
@@ -16,6 +15,7 @@ std::vector<std::vector<std::string>> getAllPerms(std::vector<std::string> v)
   return r;
 }
 }
+
 std::vector<std::string> getAllexprs(const std::vector<std::string>& v)
 {
   std::vector<std::string> r;
