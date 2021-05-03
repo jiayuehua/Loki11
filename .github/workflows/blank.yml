@@ -1,0 +1,111 @@
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    strategy:
+      matrix:
+        
+        vstriplet: ['x64-Debug','WSL-Clang-Debug','WSL-GCC-Debug']
+                
+
+        include:
+          - os: 'windows-2019'
+            triplet: 'x64-windows'
+            mono: ''
+            vstriplet: 'x64-Debug'
+            
+        
+          - os: 'ubuntu-20.04'
+            triplet: 'x64-linux'
+            # To run `nuget.exe` on non-Windows platforms, we must use `mono`.
+            mono: 'mono'
+            vstriplet: 'WSL-Clang-Debug'
+            
+      
+          - os: 'ubuntu-20.04'
+            triplet: 'x64-linux'
+            # To run `nuget.exe` on non-Windows platforms, we must use `mono`.
+            mono: 'mono'
+            vstriplet: 'WSL-GCC-Debug'  
+    env:
+      VCPKG_BINARY_SOURCES: 'clear;nuget,https://nuget.pkg.github.com/jiayuehua/index.json,readwrite'
+      vcpkgResponseFile: '${{ github.workspace }}/${{matrix.triplet}}_responsefile.txt'            
+            
+    #The type of runner that the job will run on
+    #runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+        with:
+            submodules: true
+
+      # Runs a single command using the runners shell
+      - name: Run a one-line script
+        run: echo Hello, world!
+        
+      - name: Restore from cache and install vcpkg
+        # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
+        uses: lukka/run-vcpkg@v5
+        with:
+          # Response file stored in source control, it provides the list of ports and triplet(s).
+          vcpkgArguments: '@${{ env.vcpkgResponseFile }}'
+
+          # Location of the vcpkg as submodule of the repository.
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+          # Since the cache must be invalidated when content of the response file changes, let's
+          # compute its hash and append this to the computed cache's key.
+          appendedCacheKey: ${{ hashFiles(env.vcpkgResponseFile) }}
+          #setupOnly: true
+
+
+
+
+     # This step assumes `vcpkg` has been bootstrapped (run `./vcpkg/bootstrap-vcpkg`)
+      - name: 'Setup NuGet Credentials'
+        shell: 'bash'
+        # Replace <OWNER> with your organization name
+        run: >
+          ${{ matrix.mono }} `$VCPKG_ROOT/vcpkg fetch nuget | tail -n 1`
+          sources add
+          -source "https://nuget.pkg.github.com/jiayuehua/index.json"
+          -storepasswordincleartext
+          -name "GitHub"
+          -username "jiayeuhua"
+          -password "${{ secrets.GITHUB_TOKEN }}"
+
+      # Omit this step if you're using manifests
+#      - name: 'vcpkg package restore'
+#        shell: 'bash'
+#        run: >
+#          $VCPKG_ROOT/vcpkg install catch2 fmt  --triplet ${{ matrix.triplet }}
+      
+    
+    
+    
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1
+      
+      - name: 'Run CMake with Ninja'
+        uses: lukka/run-cmake@v3
+        with:
+          useVcpkgToolchainFile: true
+        #buildDirectory: '${{ runner.workspace }}/b//unixmakefiles'
+          
+        # Or build multiple configurations out of a CMakeSettings.json file created with Visual Studio.
+          cmakeListsOrSettingsJson: CMakeSettingsJson
+          cmakeSettingsJsonPath: '${{ github.workspace }}/CMakeSettings.json'
+          configurationRegexFilter: '${{ matrix.vstriplet }}'
