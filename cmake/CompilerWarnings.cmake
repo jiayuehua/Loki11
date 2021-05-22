@@ -60,7 +60,7 @@ set(gcc_like_cxx "$<COMPILE_LANG_AND_ID:CXX,GNU>")
 set(clang_like_cxx "$<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang>")
 set(msvc_cxx "$<COMPILE_LANG_AND_ID:CXX,MSVC>")
 target_compile_options(${project_name} INTERFACE
-  "$<${clang_like_cxx}:$<BUILD_INTERFACE:${CLANG_WARNINGS}>>"
+#  "$<${clang_like_cxx}:$<BUILD_INTERFACE:${CLANG_WARNINGS}>>"
   "$<${gcc_like_cxx}:$<BUILD_INTERFACE:${GCC_WARNINGS}>>"
   "$<${msvc_cxx}:$<BUILD_INTERFACE:${MSVC_WARNINGS}>>"
 )

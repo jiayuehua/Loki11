@@ -2,7 +2,7 @@
   "configurations": [
     {
       "name": "WSL-Clang-Debug",
-      "generator": "Ninja",
+      "generator": "Unix Makefiles",
       "configurationType": "Debug",
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
@@ -44,8 +44,7 @@
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "inheritEnvironments": [ "msvc_x64_x64" ],
-      "variables": []
+      "inheritEnvironments": [ "msvc_x64_x64" ]
     }
   ]
 }

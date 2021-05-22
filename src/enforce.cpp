@@ -1,8 +1,10 @@
 #define DEBUG
 #include "loki_ext/enforce.h"
+#include "loki_ext/yasli_find.h"
 #include <iostream>
+#include <vector>
 
-int main()
+void test_enforce()
 {
   try {
     ENFORCE(0 == 1)
@@ -17,4 +19,13 @@ int main()
   } catch (std::exception &e) {
     std::cout << e.what() << std::endl;
   }
+}
+
+int main()
+{
+  std::vector<int> v{ 1, 2, 3 };
+  int d = 3;
+
+  auto i = yasli::find(std::begin(v), std::end(v), d);
+  std::cout << *i << std::endl;
 }
