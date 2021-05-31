@@ -9,7 +9,7 @@ target_include_directories(${arg} PRIVATE
 ${BOOST_MP11_INCLUDE_DIRS}
            )
 target_link_libraries(
-  ${arg} PRIVATE project_options project_warnings 
+  ${arg} PRIVATE project_options project_warnings loki
                  )
                    endfunction()
                    #aoc(world)
@@ -18,7 +18,8 @@ target_link_libraries(
 #                   aoc(ad_hoc)
 #                   aoc(minmax)
 #                   aoc(typelist)
-                   aoc(abstractfactory)
+                   #aoc(abstractfactory)
+                   aoc(smartptr)
               #     aoc(Visitor)
             #       aoc(multimethod)
               #     aoc(orderedstatic)

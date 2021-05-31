@@ -39,7 +39,8 @@
 #include <cassert>
 #include <string>
 #include <type_traits>
-
+#include <concepts>
+#include <iostream>
 #if !defined(_MSC_VER)
 #if defined(__sparc__)
 #include <inttypes.h>
@@ -98,14 +99,20 @@ public:
   }
 
   // Accessors
-  template<class F>
-  friend typename HeapStorage<F>::PointerType GetImpl(const HeapStorage<F> &sp);
+  friend inline PointerType GetImpl(const HeapStorage &sp)
+  {
+    return sp.pointee_;
+  }
 
-  template<class F>
-  friend const typename HeapStorage<F>::StoredType &GetImplRef(const HeapStorage<F> &sp);
+  friend inline const StoredType &GetImplRef(const HeapStorage &sp)
+  {
+    return sp.pointee_;
+  }
 
-  template<class F>
-  friend typename HeapStorage<F>::StoredType &GetImplRef(HeapStorage<F> &sp);
+  friend inline StoredType &GetImplRef(HeapStorage &sp)
+  {
+    return sp.pointee_;
+  }
 
 protected:
   // Destroys the data stored
@@ -128,24 +135,6 @@ private:
   // Data
   StoredType pointee_;
 };
-
-template<class T>
-inline typename HeapStorage<T>::PointerType GetImpl(const HeapStorage<T> &sp)
-{
-  return sp.pointee_;
-}
-
-template<class T>
-inline const typename HeapStorage<T>::StoredType &GetImplRef(const HeapStorage<T> &sp)
-{
-  return sp.pointee_;
-}
-
-template<class T>
-inline typename HeapStorage<T>::StoredType &GetImplRef(HeapStorage<T> &sp)
-{
-  return sp.pointee_;
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -188,15 +177,21 @@ public:
     std::swap(pointee_, rhs.pointee_);
   }
 
+  friend inline PointerType GetImpl(const DefaultSPStorage &sp)
+  {
+    return sp.pointee_;
+  }
+
+  friend inline const StoredType &GetImplRef(const DefaultSPStorage<T> &sp)
+  {
+    return sp.pointee_;
+  }
+
+  friend inline StoredType &GetImplRef(DefaultSPStorage<T> &sp)
+  {
+    return sp.pointee_;
+  }
   // Accessors
-  template<class F>
-  friend typename DefaultSPStorage<F>::PointerType GetImpl(const DefaultSPStorage<F> &sp);
-
-  template<class F>
-  friend const typename DefaultSPStorage<F>::StoredType &GetImplRef(const DefaultSPStorage<F> &sp);
-
-  template<class F>
-  friend typename DefaultSPStorage<F>::StoredType &GetImplRef(DefaultSPStorage<F> &sp);
 
 protected:
   // Destroys the data stored
@@ -219,24 +214,6 @@ private:
   // Data
   StoredType pointee_;
 };
-
-template<class T>
-inline typename DefaultSPStorage<T>::PointerType GetImpl(const DefaultSPStorage<T> &sp)
-{
-  return sp.pointee_;
-}
-
-template<class T>
-inline const typename DefaultSPStorage<T>::StoredType &GetImplRef(const DefaultSPStorage<T> &sp)
-{
-  return sp.pointee_;
-}
-
-template<class T>
-inline typename DefaultSPStorage<T>::StoredType &GetImplRef(DefaultSPStorage<T> &sp)
-{
-  return sp.pointee_;
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -322,14 +299,11 @@ public:
   }
 
   // Accessors
-  template<class F>
-  friend typename LockedStorage<F>::InitPointerType GetImpl(const LockedStorage<F> &sp);
+  friend InitPointerType GetImpl(const LockedStorage &sp);
 
-  template<class F>
-  friend const typename LockedStorage<F>::StoredType &GetImplRef(const LockedStorage<F> &sp);
+  friend const StoredType &GetImplRef(const LockedStorage &sp);
 
-  template<class F>
-  friend typename LockedStorage<F>::StoredType &GetImplRef(LockedStorage<F> &sp);
+  friend StoredType &GetImplRef(LockedStorage &sp);
 
 protected:
   // Destroys the data stored
@@ -347,29 +321,11 @@ protected:
 
 private:
   /// Dereference operator is not implemented.
-  ReferenceType operator*();
+  ReferenceType operator*() = delete;
 
   // Data
   StoredType pointee_;
 };
-
-template<class T>
-inline typename LockedStorage<T>::InitPointerType GetImpl(const LockedStorage<T> &sp)
-{
-  return sp.pointee_;
-}
-
-template<class T>
-inline const typename LockedStorage<T>::StoredType &GetImplRef(const LockedStorage<T> &sp)
-{
-  return sp.pointee_;
-}
-
-template<class T>
-inline typename LockedStorage<T>::StoredType &GetImplRef(LockedStorage<T> &sp)
-{
-  return sp.pointee_;
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -413,14 +369,11 @@ public:
   }
 
   // Accessors
-  template<class F>
-  friend typename ArrayStorage<F>::PointerType GetImpl(const ArrayStorage<F> &sp);
+  friend PointerType GetImpl(const ArrayStorage &sp);
 
-  template<class F>
-  friend const typename ArrayStorage<F>::StoredType &GetImplRef(const ArrayStorage<F> &sp);
+  friend StoredType &GetImplRef(const ArrayStorage &sp);
 
-  template<class F>
-  friend typename ArrayStorage<F>::StoredType &GetImplRef(ArrayStorage<F> &sp);
+  friend StoredType &GetImplRef(ArrayStorage &sp);
 
 protected:
   // Destroys the data stored
@@ -440,24 +393,6 @@ private:
   // Data
   StoredType pointee_;
 };
-
-template<class T>
-inline typename ArrayStorage<T>::PointerType GetImpl(const ArrayStorage<T> &sp)
-{
-  return sp.pointee_;
-}
-
-template<class T>
-inline const typename ArrayStorage<T>::StoredType &GetImplRef(const ArrayStorage<T> &sp)
-{
-  return sp.pointee_;
-}
-
-template<class T>
-inline typename ArrayStorage<T>::StoredType &GetImplRef(ArrayStorage<T> &sp)
-{
-  return sp.pointee_;
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -758,8 +693,21 @@ public:
   {}
 
   template<class P1>
-  DestructiveCopy(const DestructiveCopy<P1> &)
-  {}
+  DestructiveCopy(const DestructiveCopy<P1> &) requires false {};
+
+  DestructiveCopy(const DestructiveCopy<P> &) requires false = default;
+
+  template<class P1>
+  //  requires(!std::is_same_v<std::remove_cvref_t<P1>, std::remove_cvref_t<P>>)
+  DestructiveCopy(DestructiveCopy<P1> &&)
+  {
+    std::cout << "DestructiveCopy move other cons\n";
+  };
+
+  DestructiveCopy(DestructiveCopy<P> &&)
+  {
+    std::cout << "DestructiveCopy move cons\n";
+  };
 
   template<class P1>
   static P Clone(P1 &val)
@@ -795,10 +743,14 @@ public:
   NoCopy()
   {}
 
-  template<class P1>
-  NoCopy(const NoCopy<P1> &)
-  {}
+  NoCopy(const NoCopy<P> &) requires false = default;
 
+  NoCopy(NoCopy<P> &&) requires false = default;
+  template<class P1>
+  requires false NoCopy(const NoCopy<P1> &) = delete;
+
+  template<class P1>
+  requires false NoCopy(NoCopy<P1> &&);
   static P Clone(const P &)
   {
     // Make it depended on template parameter
@@ -822,7 +774,6 @@ public:
 ///  \struct AllowConversion
 ///
 ///  \ingroup  SmartPointerConversionGroup
-///  Implementation of the ConversionPolicy used by SmartPtr
 ///  Allows implicit conversion from SmartPtr to the pointee type
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -838,7 +789,6 @@ struct AllowConversion
 ///  \struct DisallowConversion
 ///
 ///  \ingroup  SmartPointerConversionGroup
-///  Implementation of the ConversionPolicy used by SmartPtr
 ///  Does not allow implicit conversion from SmartPtr to the pointee type
 ///  You can initialize a DisallowConversion with an AllowConversion
 ////////////////////////////////////////////////////////////////////////////////
@@ -1130,7 +1080,6 @@ struct RejectNullStrict
 template<
   typename T,
   template<class> class OwnershipPolicy = RefCounted,
-  class ConversionPolicy = DisallowConversion,
   template<class> class CheckingPolicy = AssertCheck,
   template<class> class StoragePolicy = DefaultSPStorage,
   template<class> class ConstnessPolicy = LOKI_DEFAULT_CONSTNESS>
@@ -1145,7 +1094,6 @@ class SmartPtr;
 template<
   typename T,
   template<class> class OwnershipPolicy = RefCounted,
-  class ConversionPolicy = DisallowConversion,
   template<class> class CheckingPolicy = AssertCheck,
   template<class> class StoragePolicy = DefaultSPStorage,
   template<class> class ConstnessPolicy = LOKI_DEFAULT_CONSTNESS>
@@ -1154,7 +1102,6 @@ struct SmartPtrDef
   typedef SmartPtr<
     T,
     OwnershipPolicy,
-    ConversionPolicy,
     CheckingPolicy,
     StoragePolicy,
     ConstnessPolicy>
@@ -1167,7 +1114,6 @@ struct SmartPtrDef
 ///  \ingroup SmartPointerGroup
 ///
 ///  \param OwnershipPolicy  default =  RefCounted,
-///  \param ConversionPolicy default = DisallowConversion,
 ///  \param CheckingPolicy default = AssertCheck,
 ///  \param StoragePolicy default = DefaultSPStorage
 ///  \param ConstnessPolicy default = LOKI_DEFAULT_CONSTNESS
@@ -1184,7 +1130,6 @@ template<
   typename T,
   template<class>
   class OwnershipPolicy,
-  class ConversionPolicy,
   template<class>
   class CheckingPolicy,
   template<class>
@@ -1195,12 +1140,10 @@ class SmartPtr
   : public StoragePolicy<T>
   , public OwnershipPolicy<typename StoragePolicy<T>::InitPointerType>
   , public CheckingPolicy<typename StoragePolicy<T>::StoredType>
-  , public ConversionPolicy
 {
   typedef StoragePolicy<T> SP;
   typedef OwnershipPolicy<typename StoragePolicy<T>::InitPointerType> OP;
   typedef CheckingPolicy<typename StoragePolicy<T>::StoredType> KP;
-  typedef ConversionPolicy CP;
 
 public:
   typedef typename ConstnessPolicy<T>::Type *ConstPointerType;
@@ -1210,7 +1153,7 @@ public:
   typedef typename SP::StoredType StoredType;
   typedef typename SP::ReferenceType ReferenceType;
 
-  typedef typename std::conditional_t<OP::destructiveCopy, SmartPtr, const SmartPtr>::Result
+  typedef typename std::conditional<OP::destructiveCopy, SmartPtr, const SmartPtr>::type
     CopyArg;
 
 private:
@@ -1219,11 +1162,11 @@ private:
   };
 
 #ifdef LOKI_SMARTPTR_CONVERSION_CONSTRUCTOR_POLICY
-  typedef typename std::conditional_t<CP::allow, const StoredType &, NeverMatched>::Result ImplicitArg;
-  typedef typename std::conditional_t<!CP::allow, const StoredType &, NeverMatched>::Result ExplicitArg;
+  //typedef typename std::conditional<CP::allow, const StoredType &, NeverMatched>::type ImplicitArg;
+  //typedef typename std::conditional<!CP::allow, const StoredType &, NeverMatched>::type ExplicitArg;
 #else
-  typedef const StoredType &ImplicitArg;
-  typedef typename std::conditional_t<false, const StoredType &, NeverMatched>::Result ExplicitArg;
+  typedef const StoredType &ExplicitArg;
+  //typedef typename std::conditional<false, const StoredType &, NeverMatched>::type ExplicitArg;
 #endif
 
 public:
@@ -1237,106 +1180,56 @@ public:
     KP::OnInit(GetImpl(*this));
   }
 
-  SmartPtr(ImplicitArg p) : SP(p)
-  {
-    KP::OnInit(GetImpl(*this));
-  }
 
-  SmartPtr(CopyArg &rhs) : SP(rhs), OP(rhs), KP(rhs), CP(rhs)
+  SmartPtr(const CopyArg &rhs) requires std::is_copy_constructible_v<OP>
+    : SP(rhs)
+    , OP(rhs)
+    , KP(rhs)
   {
     GetImplRef(*this) = OP::Clone(GetImplRef(rhs));
+  }
+
+
+  SmartPtr(SmartPtr &&rhs) requires(std::is_move_constructible_v<OP>)
+    : SP(rhs), OP(std::move(rhs)), KP(rhs)
+  {
+    std::cout << "SP move construc\n";
+    GetImplRef(*this) = OP::Clone(GetImplRef(rhs));
+  }
+  template<
+    typename T1>
+  SmartPtr(SmartPtr<T1> &&rhs) requires(!std::same_as<T, T1> && std::is_move_constructible_v<OP>)
+    : SP(rhs), OP(std::move(rhs)), KP(rhs)
+  {
+    GetImplRef(*this) = OP::Clone(GetImplRef(rhs));
+  }
+
+
+  SmartPtr &operator=(SmartPtr &&rhs)
+  {
+    SmartPtr temp(std::move(rhs));
+    return temp;
   }
 
   template<
-    typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  SmartPtr(const SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &rhs)
-    : SP(rhs), OP(rhs), KP(rhs), CP(rhs)
-  {
-    GetImplRef(*this) = OP::Clone(GetImplRef(rhs));
-  }
-
-  template<
-    typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  SmartPtr(SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &rhs)
-    : SP(rhs), OP(rhs), KP(rhs), CP(rhs)
-  {
-    GetImplRef(*this) = OP::Clone(GetImplRef(rhs));
-  }
-
-  SmartPtr(RefToValue<SmartPtr> rhs)
-    : SP(rhs), OP(rhs), KP(rhs), CP(rhs)
-  {}
-
-  operator RefToValue<SmartPtr>()
-  {
-    return RefToValue<SmartPtr>(*this);
-  }
-
-  SmartPtr &operator=(CopyArg &rhs)
+    typename T1>
+  SmartPtr &operator=(const SmartPtr<T1, OwnershipPolicy, CheckingPolicy, StoragePolicy, ConstnessPolicy> &rhs)
   {
     SmartPtr temp(rhs);
     temp.Swap(*this);
     return *this;
   }
 
-  template<
-    typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  SmartPtr &operator=(const SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &rhs)
+  template<typename T1>
+  SmartPtr &operator=(SmartPtr<T1, OwnershipPolicy, CheckingPolicy, StoragePolicy, ConstnessPolicy> &&rhs)
   {
-    SmartPtr temp(rhs);
-    temp.Swap(*this);
-    return *this;
-  }
-
-  template<
-    typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  SmartPtr &operator=(SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &rhs)
-  {
-    SmartPtr temp(rhs);
-    temp.Swap(*this);
-    return *this;
+    SmartPtr temp(std::move(rhs));
+    return temp;
   }
 
   void Swap(SmartPtr &rhs)
   {
     OP::Swap(rhs);
-    CP::Swap(rhs);
     KP::Swap(rhs);
     SP::Swap(rhs);
   }
@@ -1351,10 +1244,11 @@ public:
 #ifdef LOKI_ENABLE_FRIEND_TEMPLATE_TEMPLATE_PARAMETER_WORKAROUND
 
   // old non standard in class definition of friends
-  friend inline void Release(SmartPtr &sp, typename SP::StoredType &p)
+  friend inline typename SP::StoredType Release(SmartPtr &sp)
   {
-    p = GetImplRef(sp);
+    typename SP::StoredType p = GetImplRef(sp);
     GetImplRef(sp) = SP::Default();
+    return p;
   }
 
   friend inline void Reset(SmartPtr &sp, typename SP::StoredType p)
@@ -1364,54 +1258,8 @@ public:
 
 #else
 
-  template<
-    typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  friend void Release(SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &sp,
-    typename SP1<T1>::StoredType &p);
-
-  template<
-    typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  friend void Reset(SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &sp,
-    typename SP1<T1>::StoredType p);
 #endif
 
-
-  template<
-    typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  bool Merge(SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &rhs)
-  {
-    if (GetImpl(*this) != GetImpl(rhs)) {
-      return false;
-    }
-    return OP::template Merge(rhs);
-  }
 
   PointerType operator->()
   {
@@ -1439,7 +1287,7 @@ public:
 
   bool operator!() const// Enables "if (!sp) ..."
   {
-    return GetImpl(*this) == 0;
+    return GetImpl(*this) == nullptr;
   }
 
   static inline T *GetPointer(const SmartPtr &sp)
@@ -1448,105 +1296,33 @@ public:
   }
 
   // Ambiguity buster
-  template<
-    typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  bool operator==(const SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &rhs) const
+  template<typename T1>
+  bool operator==(const SmartPtr<T1, OwnershipPolicy, CheckingPolicy, StoragePolicy, ConstnessPolicy> &rhs) const
   {
     return GetImpl(*this) == GetImpl(rhs);
   }
 
   // Ambiguity buster
   template<
-    typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  bool operator!=(const SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &rhs) const
+    typename T1>
+  auto operator<=>(const SmartPtr<T1, OwnershipPolicy, CheckingPolicy, StoragePolicy, ConstnessPolicy> &rhs) const
   {
-    return !(*this == rhs);
+    return GetImpl(*this) <=> GetImpl(rhs);
+  }
+
+  template<typename T1, class U>
+  bool operator==(const U *rhs) const
+  {
+    return GetImpl(*this) == rhs;
   }
 
   // Ambiguity buster
   template<
     typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  bool operator<(const SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &rhs) const
+    class U>
+  auto operator<=>(const U *rhs) const
   {
-    return GetImpl(*this) < GetImpl(rhs);
-  }
-
-  // Ambiguity buster
-  template<
-    typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  inline bool operator>(const SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &rhs)
-  {
-    return (GetImpl(rhs) < GetImpl(*this));
-  }
-
-  // Ambiguity buster
-  template<
-    typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  inline bool operator<=(const SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &rhs)
-  {
-    return !(GetImpl(rhs) < GetImpl(*this));
-  }
-
-  // Ambiguity buster
-  template<
-    typename T1,
-    template<class>
-    class OP1,
-    class CP1,
-    template<class>
-    class KP1,
-    template<class>
-    class SP1,
-    template<class>
-    class CNP1>
-  inline bool operator>=(const SmartPtr<T1, OP1, CP1, KP1, SP1, CNP1> &rhs)
-  {
-    return !(GetImpl(*this) < GetImpl(rhs));
+    return GetImpl(*this) <=> rhs;
   }
 
 private:
@@ -1557,10 +1333,8 @@ private:
     void dummy() {}
   };
 
-  typedef void (Tester::*unspecified_boolean_type_)();
+  typedef void (Tester::*unspecified_boolean_type)();
 
-  typedef typename std::conditional_t<CP::allow, Tester, unspecified_boolean_type_>::Result
-    unspecified_boolean_type;
 
 public:
   // enable 'if (sp)'
@@ -1568,347 +1342,8 @@ public:
   {
     return !*this ? 0 : &Tester::dummy;
   }
-
-private:
-  // Helper for disallowing automatic conversion
-  struct Insipid
-  {
-    Insipid(PointerType) {}
-  };
-
-  typedef typename std::conditional_t<CP::allow, PointerType, Insipid>::Result
-    AutomaticConversionResult;
-
-public:
-  operator AutomaticConversionResult() const
-  {
-    return GetImpl(*this);
-  }
 };
 
-
-////////////////////////////////////////////////////////////////////////////////
-// friends
-////////////////////////////////////////////////////////////////////////////////
-
-#ifndef LOKI_ENABLE_FRIEND_TEMPLATE_TEMPLATE_PARAMETER_WORKAROUND
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP>
-inline void Release(SmartPtr<T, OP, CP, KP, SP, CNP> &sp,
-  typename SP<T>::StoredType &p)
-{
-  p = GetImplRef(sp);
-  GetImplRef(sp) = SP<T>::Default();
-}
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP>
-inline void Reset(SmartPtr<T, OP, CP, KP, SP, CNP> &sp,
-  typename SP<T>::StoredType p)
-{
-  SmartPtr<T, OP, CP, KP, SP, CNP>(p).Swap(sp);
-}
-
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
-// free comparison operators for class template SmartPtr
-////////////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////////////
-///  operator== for lhs = SmartPtr, rhs = raw pointer
-///  \ingroup SmartPointerGroup
-////////////////////////////////////////////////////////////////////////////////
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP1,
-  typename U>
-inline bool operator==(const SmartPtr<T, OP, CP, KP, SP, CNP1> &lhs,
-  U *rhs)
-{
-  return GetImpl(lhs) == rhs;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///  operator== for lhs = raw pointer, rhs = SmartPtr
-///  \ingroup SmartPointerGroup
-////////////////////////////////////////////////////////////////////////////////
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP1,
-  typename U>
-inline bool operator==(U *lhs,
-  const SmartPtr<T, OP, CP, KP, SP, CNP1> &rhs)
-{
-  return rhs == lhs;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///  operator!= for lhs = SmartPtr, rhs = raw pointer
-///  \ingroup SmartPointerGroup
-////////////////////////////////////////////////////////////////////////////////
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP,
-  typename U>
-inline bool operator!=(const SmartPtr<T, OP, CP, KP, SP, CNP> &lhs,
-  U *rhs)
-{
-  return !(lhs == rhs);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///  operator!= for lhs = raw pointer, rhs = SmartPtr
-///  \ingroup SmartPointerGroup
-////////////////////////////////////////////////////////////////////////////////
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP,
-  typename U>
-inline bool operator!=(U *lhs,
-  const SmartPtr<T, OP, CP, KP, SP, CNP> &rhs)
-{
-  return rhs != lhs;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///  operator< for lhs = SmartPtr, rhs = raw pointer
-///  \ingroup SmartPointerGroup
-////////////////////////////////////////////////////////////////////////////////
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP,
-  typename U>
-inline bool operator<(const SmartPtr<T, OP, CP, KP, SP, CNP> &lhs,
-  U *rhs)
-{
-  return (GetImpl(lhs) < rhs);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///  operator< for lhs = raw pointer, rhs = SmartPtr
-///  \ingroup SmartPointerGroup
-////////////////////////////////////////////////////////////////////////////////
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP,
-  typename U>
-inline bool operator<(U *lhs,
-  const SmartPtr<T, OP, CP, KP, SP, CNP> &rhs)
-{
-  return (GetImpl(rhs) < lhs);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//  operator> for lhs = SmartPtr, rhs = raw pointer
-///  \ingroup SmartPointerGroup
-////////////////////////////////////////////////////////////////////////////////
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP,
-  typename U>
-inline bool operator>(const SmartPtr<T, OP, CP, KP, SP, CNP> &lhs,
-  U *rhs)
-{
-  return rhs < lhs;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///  operator> for lhs = raw pointer, rhs = SmartPtr
-///  \ingroup SmartPointerGroup
-////////////////////////////////////////////////////////////////////////////////
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP,
-  typename U>
-inline bool operator>(U *lhs,
-  const SmartPtr<T, OP, CP, KP, SP, CNP> &rhs)
-{
-  return rhs < lhs;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///  operator<= for lhs = SmartPtr, rhs = raw pointer
-///  \ingroup SmartPointerGroup
-////////////////////////////////////////////////////////////////////////////////
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP,
-  typename U>
-inline bool operator<=(const SmartPtr<T, OP, CP, KP, SP, CNP> &lhs,
-  U *rhs)
-{
-  return !(rhs < lhs);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///  operator<= for lhs = raw pointer, rhs = SmartPtr
-///  \ingroup SmartPointerGroup
-////////////////////////////////////////////////////////////////////////////////
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP,
-  typename U>
-inline bool operator<=(U *lhs,
-  const SmartPtr<T, OP, CP, KP, SP, CNP> &rhs)
-{
-  return !(rhs < lhs);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///  operator>= for lhs = SmartPtr, rhs = raw pointer
-///  \ingroup SmartPointerGroup
-////////////////////////////////////////////////////////////////////////////////
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP,
-  typename U>
-inline bool operator>=(const SmartPtr<T, OP, CP, KP, SP, CNP> &lhs,
-  U *rhs)
-{
-  return !(lhs < rhs);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///  operator>= for lhs = raw pointer, rhs = SmartPtr
-///  \ingroup SmartPointerGroup
-////////////////////////////////////////////////////////////////////////////////
-
-template<
-  typename T,
-  template<class>
-  class OP,
-  class CP,
-  template<class>
-  class KP,
-  template<class>
-  class SP,
-  template<class>
-  class CNP,
-  typename U>
-inline bool operator>=(U *lhs,
-  const SmartPtr<T, OP, CP, KP, SP, CNP> &rhs)
-{
-  return !(lhs < rhs);
-}
 
 }// namespace Loki
 
@@ -1922,20 +1357,16 @@ template<
   typename T,
   template<class>
   class OP,
-  class CP,
   template<class>
   class KP,
   template<class>
   class SP,
   template<class>
   class CNP>
-struct less<Loki::SmartPtr<T, OP, CP, KP, SP, CNP>>
-  : public binary_function<Loki::SmartPtr<T, OP, CP, KP, SP, CNP>,
-      Loki::SmartPtr<T, OP, CP, KP, SP, CNP>,
-      bool>
+struct less<Loki::SmartPtr<T, OP, KP, SP, CNP>>
 {
-  bool operator()(const Loki::SmartPtr<T, OP, CP, KP, SP, CNP> &lhs,
-    const Loki::SmartPtr<T, OP, CP, KP, SP, CNP> &rhs) const
+  bool operator()(const Loki::SmartPtr<T, OP, KP, SP, CNP> &lhs,
+    const Loki::SmartPtr<T, OP, KP, SP, CNP> &rhs) const
   {
     return less<T *>()(GetImpl(lhs), GetImpl(rhs));
   }
