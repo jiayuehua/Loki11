@@ -22,7 +22,7 @@
         },
         {
           "name": "CMAKE_CXX_FLAGS",
-          "value": "-std=c++2a",
+          "value": "-std=c++20",
           "type": "STRING"
         }
       ]
@@ -42,7 +42,7 @@
       "variables": [
         {
           "name": "CMAKE_CXX_FLAGS",
-          "value": "-std=c++2a",
+          "value": "-std=c++20",
           "type": "STRING"
         }
       ]
