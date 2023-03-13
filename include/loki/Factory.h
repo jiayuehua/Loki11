@@ -22,6 +22,8 @@
 #include <boost/container/flat_map.hpp>
 #include "SmallObj.h"
 #include <utility>
+#include <type_traits>
+#include <map>
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -139,37 +141,31 @@ class Factory : public FactoryErrorPolicy<IdentifierType, AbstractProduct>
 {
   typedef std::function<AbstractProduct *(Param...)> ProductCreator;
 
-  typedef boost::container::flat_map<IdentifierType, ProductCreator> IdToProductMap;
+  typedef std::map<IdentifierType, ProductCreator> IdToProductMap;
 
   IdToProductMap associations_;
 
 public:
-
-  bool Register( IdentifierType &&id, const ProductCreator & creator)
+  template<class ID, class... Arg>
+  std::enable_if_t<std::conjunction_v<std::is_convertible<ID,IdentifierType>,
+  std::is_constructible<ProductCreator,Arg...>>, bool> 
+  Register( ID &&id, Arg&&... arg)
   {
-    return associations_.insert(
-                          typename IdToProductMap::value_type(std::forward<IdentifierType>(id), creator))
-             .second
-           != 0;
+    return associations_.try_emplace(
+                          std::forward<IdentifierType>(id), std::forward<Arg>(arg)...).second ;
   }
 
-  template<class PtrObj, typename CreaFn>
-  bool Register(const IdentifierType &id, const PtrObj &p, CreaFn fn)
-  {
-    ProductCreator creator(p, fn);
-    return associations_.insert(
-                          typename IdToProductMap::value_type(id, creator))
-             .second
-           != 0;
-  }
 
-  bool Unregister(const IdentifierType &id)
+  template<class ID>
+  std::enable_if_t<std::is_convertible_v<ID,IdentifierType>,bool> 
+    Unregister(ID &&id)
   {
     return associations_.erase(id) != 0;
   }
 
   template<class ID, class... Arg>
-  AbstractProduct *CreateObject(ID &&id, Arg &&...arg)const
+  std::enable_if_t<std::conjunction_v<std::is_convertible<ID,IdentifierType>,
+  std::is_convertible<Arg,Param>...>, AbstractProduct> *CreateObject(ID &&id, Arg &&...arg)const
   {
     typename IdToProductMap::const_iterator i = associations_.find(id);
     if (i != associations_.end()) {
@@ -231,7 +227,7 @@ public:
   }
 
 private:
-  typedef boost::container::flat_map<TypeInfo, ProductCreator> IdToProductMap;
+  typedef std::map<TypeInfo, ProductCreator> IdToProductMap;
   IdToProductMap associations_;
 };
 
