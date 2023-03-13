@@ -73,6 +73,9 @@ endif()
 #  )
 #
 ## enable testing
+if(ENABLE_TESTING)
+  add_subdirectory(test)
+endif()
 #enable_testing()
 ## set(VCPKG_ROOT "/home/rob/openSrc/vcpkg")
 #

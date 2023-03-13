@@ -50,11 +50,121 @@ creator 是用来创建对象的functor, 能接受参数Param...，返回类型为AbstractProduct指
       AbstractProduct *CreateObject(const ID &id, Arg &&...arg);
 
 以上函数查询id是否注册过，如果注册过的话，调用id对应的creator方法，参数为arg...来创建对象，返回结果。
+例子：
+
+    #include <iostream>
+    #include <string>
+    #include <loki/Factory.h>
+
+
+    using namespace Loki;
+    using std::cout;
+    using std::endl;
+
+
+    ////////////////////////////////////////////
+    // Object to create: Product
+    // Constructor with 0 and 2 arguments
+    ////////////////////////////////////////////
+
+    class AbstractProduct
+    {
+    public:
+      virtual int get_x() const = 0;
+      virtual int get_y() const = 0;
+      virtual ~AbstractProduct() = default;
+    };
+
+    class Product : public AbstractProduct
+    {
+      int x = 0;
+      int y = 0;
+
+    public:
+      Product() = default;
+      Product(int xa, int ya) : x(xa), y(ya) {}
+      int get_x() const
+      {
+        return x;
+      }
+      int get_y() const
+      {
+        return y;
+      }
+    };
+
+    ///////////////////////////////////////////////////////////
+    // Factory for creation a Product object without parameters
+    ///////////////////////////////////////////////////////////
+
+    typedef Factory<int, DefaultFactoryError, AbstractProduct>
+      PFactoryNull;
+
+    /////////////////////////////////////////////////////////////
+    // Factory for creation a Product object with 2 parameters
+    /////////////////////////////////////////////////////////////
+
+    typedef Factory<int, DefaultFactoryError, AbstractProduct, int, int>
+      PFactory;
+
+    ////////////////////////////////////////////////////
+    // Creator functions with different names
+    ////////////////////////////////////////////////////
+
+    Product *createProductNull()
+    {
+      cout << "createProductNull()" << endl;
+      return new Product;
+    }
+    Product *createProductParm(int a, int b)
+    {
+      cout << "createProductParm( int a, int b ) " << endl;
+      return new Product(a, b);
+    }
 
 
 
+    void testFactoryNull()
+    {
+      PFactoryNull pFactoryNull;
+      bool const ok1 = pFactoryNull.Register(1, createProductNull);
+      if (ok1) {
+        std::unique_ptr<AbstractProduct> pObject(pFactoryNull.CreateObject(1));
+        if (pObject.get()) {
+          cout << "pObject->get_x() = " << pObject->get_x() << endl;
+          cout << "pObject->get_y() = " << pObject->get_y() << endl;
+        }
+      }
+    }
 
+    void testFactoryBinary()
+    {
+      PFactory pFactoryNull;
+      bool const ok1 = pFactoryNull.Register(1, createProductParm);
+      if (ok1) {
+        std::unique_ptr<AbstractProduct> pObject(pFactoryNull.CreateObject(1, 5, 5));
+        if (pObject) {
+          cout << "pObject->get_x() = " << pObject->get_x() << endl;
+          cout << "pObject->get_y() = " << pObject->get_y() << endl;
+        }
+      }
+    }
 
+    int main()
+    {
+      testFactoryNull();
+      testFactoryBinary();
+    }
+    
+ 输出：
 
+      createProductNull()
+      pObject->get_x() = 0
+      pObject->get_y() = 0
+      createProductParm( int a, int b ) 
+      pObject->get_x() = 5
+      pObject->get_y() = 5
+    
+   
 
-
+  
