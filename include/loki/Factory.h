@@ -21,6 +21,7 @@
 #include <functional>
 #include <boost/container/flat_map.hpp>
 #include "SmallObj.h"
+#include <utility>
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -94,7 +95,7 @@ struct DefaultFactoryError
     const char *what() const throw() { return "Unknown Type"; }
   };
 
-  static AbstractProduct *OnUnknownType(IdentifierType)
+  static AbstractProduct *OnUnknownType(const IdentifierType &)
   {
     throw Exception();
   }
@@ -129,18 +130,12 @@ struct DefaultFactoryError
 /// \code LOKI_FUNCTOR_IS_NOT_A_SMALLOBJECT \endcode
 ////////////////////////////////////////////////////////////////////////////////
 template<
-  class AbstractProduct,
-  typename IdentifierType,
-  typename CreatorParmTList ,
-  template<typename, class> class FactoryErrorPolicy = DefaultFactoryError>
-class Factory;
-template<
-  class AbstractProduct,
   typename IdentifierType,
   template<typename, class>
   class FactoryErrorPolicy,
+  class AbstractProduct,
   class... Param>
-class Factory<AbstractProduct, IdentifierType, std::tuple<Param...>, FactoryErrorPolicy> : public FactoryErrorPolicy<IdentifierType, AbstractProduct>
+class Factory : public FactoryErrorPolicy<IdentifierType, AbstractProduct>
 {
   typedef std::function<AbstractProduct *(Param...)> ProductCreator;
 
@@ -150,10 +145,10 @@ class Factory<AbstractProduct, IdentifierType, std::tuple<Param...>, FactoryErro
 
 public:
 
-  bool Register(const IdentifierType &id, ProductCreator creator)
+  bool Register( IdentifierType &&id, const ProductCreator & creator)
   {
     return associations_.insert(
-                          typename IdToProductMap::value_type(id, creator))
+                          typename IdToProductMap::value_type(std::forward<IdentifierType>(id), creator))
              .second
            != 0;
   }
@@ -173,20 +168,10 @@ public:
     return associations_.erase(id) != 0;
   }
 
-  std::vector<IdentifierType> RegisteredIds()
-  {
-    std::vector<IdentifierType> ids;
-    for (typename IdToProductMap::iterator it = associations_.begin();
-         it != associations_.end();
-         ++it) {
-      ids.push_back(it->first);
-    }
-    return ids;
-  }
   template<class ID, class... Arg>
-  AbstractProduct *CreateObject(const ID &id, Arg &&...arg)
+  AbstractProduct *CreateObject(ID &&id, Arg &&...arg)const
   {
-    typename IdToProductMap::iterator i = associations_.find(id);
+    typename IdToProductMap::const_iterator i = associations_.find(id);
     if (i != associations_.end()) {
       return (i->second)(std::forward<Arg>(arg)...);
     }
