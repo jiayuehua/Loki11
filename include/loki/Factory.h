@@ -131,7 +131,7 @@ struct DefaultFactoryError
 template<
   class AbstractProduct,
   typename IdentifierType,
-  typename CreatorParmTList = NullType,
+  typename CreatorParmTList ,
   template<typename, class> class FactoryErrorPolicy = DefaultFactoryError>
 class Factory;
 template<
@@ -149,15 +149,6 @@ class Factory<AbstractProduct, IdentifierType, std::tuple<Param...>, FactoryErro
   IdToProductMap associations_;
 
 public:
-  Factory()
-    : associations_()
-  {
-  }
-
-  ~Factory()
-  {
-    associations_.erase(associations_.begin(), associations_.end());
-  }
 
   bool Register(const IdentifierType &id, ProductCreator creator)
   {
@@ -193,7 +184,7 @@ public:
     return ids;
   }
   template<class ID, class... Arg>
-  AbstractProduct *CreateObject(ID &&id, Arg &&...arg)
+  AbstractProduct *CreateObject(const ID &id, Arg &&...arg)
   {
     typename IdToProductMap::iterator i = associations_.find(id);
     if (i != associations_.end()) {
