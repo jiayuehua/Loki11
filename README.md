@@ -165,6 +165,70 @@ creator 是用来创建对象的functor, 能接受参数Param...，返回类型为AbstractProduct指
       pObject->get_x() = 5
       pObject->get_y() = 5
     
-   
+# visitor 用法 
 
+ visitor模式是一种设计模式，它可以在不改变数据结构的情况下，为数据结构中的元素添加新的操作。visitor模式的目的是将数据结构与数据操作分离。visitor模式的优点是增加新的操作很容易，因为增加新的操作就意味着增加一个新的visitor。
+
+ 例子:
+ 
+    #include <loki/Visitor.h>
+    #include <iostream>
+
+    class Base : public Loki::BaseVisitable<>
+    {
+     public:
+      LOKI_DEFINE_VISITABLE()
+    };
+
+    class Type1 : public Base
+    {
+     public:
+      LOKI_DEFINE_VISITABLE()
+    };
+
+    class VariableVisitor : public Loki::Visitor < void
+      , false,Base, Type1 > {
+     public:
+      void Visit(Base&) { std::cout << "void Visit(Base&)\n"; }
+      void Visit(Type1&) { std::cout << "void Visit(Type1&)\n"; }
+    };
+
+    class CBase : public Loki::BaseVisitable<void,true>
+    {
+     public:
+      LOKI_DEFINE_CONST_VISITABLE()
+    };
+
+    class CType1 : public CBase
+    {
+     public:
+      LOKI_DEFINE_CONST_VISITABLE()
+    };
+
+    class CVariableVisitor : public Loki::Visitor<void,true, CBase,CType1>
+    {
+     public:
+      void Visit(const CBase&) { std::cout << "void Visit(CBase&)\n"; }
+      void Visit(const CType1&) { std::cout << "void Visit(CType1&)\n"; }
+    };
+
+    int main()
+    {
+      VariableVisitor visitor;
+      Type1           type1;
+      Base*           dyn = &type1;
+      Base           base ;
+      dyn->Accept(visitor);
+      dyn = &base;
+      dyn->Accept(visitor);
+
+      CVariableVisitor cvisitor;
+      CType1           ctype1;
+      CBase*           cdyn = &ctype1;
+      cdyn->Accept(cvisitor);
+      CBase cbase;
+      cdyn = &cbase;
+      cdyn->Accept(cvisitor);
+    }
+     
   

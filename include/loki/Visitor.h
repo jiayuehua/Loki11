@@ -35,7 +35,7 @@ namespace Loki {
 class BaseVisitor
 {
 public:
-  virtual ~BaseVisitor() {}
+  virtual ~BaseVisitor() = default;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -130,40 +130,6 @@ struct VisitorProductBase
   virtual ReturnType Visit(ParamType &) = 0;
 };
 
-
-////////////////////////////////////////////////////////////////////////////////
-// class template Visitor (specialization)
-// This specialization is not present in the book. It makes it easier to define
-// Visitors for multiple types in a shot by using a typelist. Example:
-//
-// class SomeVisitor :
-//     public BaseVisitor // required
-//     public Visitor<LOKI_TYPELIST_2(RasterBitmap, Paragraph)>
-// {
-// public:
-//     void Visit(RasterBitmap&); // visit a RasterBitmap
-//     void Visit(Paragraph &);   // visit a Paragraph
-// };
-////////////////////////////////////////////////////////////////////////////////
-
-//template <class Head, class Tail, typename R>
-//class Visitor<Typelist<Head, Tail>, R, false>
-//    : public Visitor<Head, R, false>, public Visitor<Tail, R, false>
-//{
-//public:
-//    typedef R ReturnType;
-//   // using Visitor<Head, R>::Visit;
-//   // using Visitor<Tail, R>::Visit;
-//};
-//
-//template <class Head, typename R>
-//class Visitor<Typelist<Head, NullType>, R, false> : public Visitor<Head, R, false>
-//{
-//public:
-//    typedef R ReturnType;
-//    using Visitor<Head, R, false>::Visit;
-//};
-
 template<typename R, bool constparam, class... Head>
 class Visitor
   : public BaseVisitor
@@ -171,8 +137,6 @@ class Visitor
 {
 public:
   typedef R ReturnType;
-  // using Visitor<Head, R>::Visit;
-  // using Visitor<Tail, R>::Visit;
 };
 
 //template <class Head, typename R,bool constparam>

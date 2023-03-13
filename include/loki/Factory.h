@@ -2,6 +2,7 @@
 // The Loki Library
 // Copyright (c) 2001 by Andrei Alexandrescu
 // Copyright (c) 2005 by Peter Kuemmel
+// Copyright (c) 2023 by Jia yuehua
 // This code DOES NOT accompany the book:
 // Alexandrescu, Andrei. "Modern C++ Design: Generic Programming and Design
 //     Patterns Applied". Copyright (c) 2001. Addison-Wesley.
