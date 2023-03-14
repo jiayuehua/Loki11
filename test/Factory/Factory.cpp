@@ -44,7 +44,7 @@ class Product : public AbstractProduct
 
 public:
   Product() = default;
-  Product(int xa, int ya) : x(xa), y(ya) {}
+  Product(int xa, int ya) : x(std::move(xa)), y(std::move(ya)) {}
   int get_x() const
   {
     return x;

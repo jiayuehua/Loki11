@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // The Loki Library
 // Copyright (c) 2006 Peter Kümmel
+// Copyright (c) 2023 Jia yuehua
 // Permission to use, copy, modify, distribute and sell this software for any
 //     purpose is hereby granted without fee, provided that the above copyright
 //     notice appear in all copies and that both that copyright notice and this
@@ -27,21 +28,14 @@ class Type1 : public Base
   LOKI_DEFINE_VISITABLE()
 };
 
-class VariableVisitor : public Loki::BaseVisitor,
-// public Loki::Visitor<Base>,
-// public Loki::Visitor<Type1>
-#ifndef LOKI_DISABLE_TYPELIST_MACROS
-                        public Loki::Visitor<LOKI_TYPELIST_2(Base, Type1)>
-#else
-                        public Loki::Visitor<Loki::Seq<Base, Type1>::Type>
-#endif
-{
+class VariableVisitor : public Loki::Visitor < void
+  , false,Base, Type1 > {
  public:
   void Visit(Base&) { std::cout << "void Visit(Base&)\n"; }
   void Visit(Type1&) { std::cout << "void Visit(Type1&)\n"; }
 };
 
-class CBase : public Loki::BaseVisitable<void, Loki::DefaultCatchAll, true>
+class CBase : public Loki::BaseVisitable<void,true>
 {
  public:
   LOKI_DEFINE_CONST_VISITABLE()
@@ -53,14 +47,7 @@ class CType1 : public CBase
   LOKI_DEFINE_CONST_VISITABLE()
 };
 
-class CVariableVisitor : public Loki::BaseVisitor,
-// public Loki::Visitor<CBase,void,true>,
-// public Loki::Visitor<CType1,void,true>
-#ifndef LOKI_DISABLE_TYPELIST_MACROS
-                         public Loki::Visitor<LOKI_TYPELIST_2(CBase, CType1), void, true>
-#else
-                         public Loki::Visitor<Loki::Seq<CBase, CType1>::Type, void, true>
-#endif
+class CVariableVisitor : public Loki::Visitor<void,true, CBase,CType1>
 {
  public:
   void Visit(const CBase&) { std::cout << "void Visit(CBase&)\n"; }
@@ -72,10 +59,16 @@ int main()
   VariableVisitor visitor;
   Type1           type1;
   Base*           dyn = &type1;
+  Base           base ;
+  dyn->Accept(visitor);
+  dyn = &base;
   dyn->Accept(visitor);
 
   CVariableVisitor cvisitor;
   CType1           ctype1;
   CBase*           cdyn = &ctype1;
+  cdyn->Accept(cvisitor);
+  CBase cbase;
+  cdyn = &cbase;
   cdyn->Accept(cvisitor);
 }

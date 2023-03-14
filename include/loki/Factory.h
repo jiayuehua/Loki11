@@ -149,7 +149,7 @@ class Factory : public FactoryErrorPolicy<IdentifierType, AbstractProduct>
 public:
   template<class ID, class... Arg>
   std::enable_if_t<std::conjunction_v<std::is_convertible<ID,IdentifierType>,
-  std::is_constructible<ProductCreator,Arg...>>, bool> 
+  std::is_constructible<ProductCreator,Arg&&...>>, bool> 
   Register( ID &&id, Arg&&... arg)
   {
     return associations_.try_emplace(
@@ -165,8 +165,8 @@ public:
   }
 
   template<class ID, class... Arg>
-  std::enable_if_t<std::conjunction_v<std::is_convertible<ID,IdentifierType>,
-  std::is_convertible<Arg,Param>...>, AbstractProduct> *CreateObject(ID &&id, Arg &&...arg)const
+  std::enable_if_t<sizeof...(Arg)==sizeof...(Param)&&std::conjunction_v<std::is_convertible<ID,IdentifierType>,
+  std::is_convertible< Arg&&,Param>...>, AbstractProduct> *CreateObject(ID &&id, Arg &&...arg)const
   {
     typename IdToProductMap::const_iterator i = associations_.find(id);
     if (i != associations_.end()) {

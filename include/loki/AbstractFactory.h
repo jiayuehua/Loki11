@@ -62,15 +62,14 @@ public:
 
 template<
   template<class>
-  class Unit =
-    AbstractFactoryUnit,
-  class... TList>
-class AbstractFactory : public GenScatterHierarchy<Unit, TList...>
+  class Unit,
+  class... U>
+class AbstractFactoryEx : public GenScatterHierarchy<Unit, U...>
 {
 public:
-  typedef mp::mp_list<TList...> ProductList;
+  typedef mp::mp_list<U...> ProductList;
 
-  template<class T>
+  template<class T, class = std::enable_if_t< mp::mp_contains<ProductList,T>::value> >
   T *Create()
   {
     Unit<T> &unit = *this;
@@ -78,27 +77,29 @@ public:
   }
 };
 
+template<class... TList>
+using AbstractFactory = AbstractFactoryEx<AbstractFactoryUnit, TList...>;
+
 ////////////////////////////////////////////////////////////////////////////////
 // class template OpNewFactoryUnit
 // Creates an object by invoking the new operator
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class ConcreteProduct, class Base>
-class OpNewFactoryUnit
+class OpNewFactoryUnit:public Base
 {
-  typedef typename Base::ProductList BaseProductList;
 
 protected:
-  typedef typename BaseProductList::Tail ProductList;
 
 public:
-  typedef typename BaseProductList::Head AbstractProduct;
-  ConcreteProduct *DoCreate(hana::type<Base>)
+  typedef typename Base::ProductList BaseProductList;
+  typedef mp::mp_drop_c < BaseProductList,1> ProductList;
+  typedef mp::mp_front<BaseProductList> AbstractProduct;
+  ConcreteProduct *DoCreate(hana::type<AbstractProduct>)
   {
     return new ConcreteProduct;
   }
 };
-
 ////////////////////////////////////////////////////////////////////////////////
 // class template PrototypeFactoryUnit
 // Creates an object by cloning a prototype
@@ -170,43 +171,24 @@ inline void DoSetPrototype(PrototypeFactoryUnit<CP, Base> &me,
 
 ////////////////////////////////////////////////////////////////////////////////
 // class template ConcreteFactory
-// Implements an AbstractFactory interface
+// Implements an AbstractFacerface
 ////////////////////////////////////////////////////////////////////////////////
 
-//template<class T, class IS, class A, template<class, class> class Creator>
-//struct TupleImpl;
-//
-//template<class B, class D, std::size_t... i, template<class, class> class Creator>
-//struct TupleImpl<B, D, std::index_sequence<i...>, Creator> : public Creator<mp::mp_at_c<B, i>, mp::mp_at_c<D, i>>...
-//{
-//};
-//template<
-//  class AbstractFactory,
-//  template<class, class> class Creator = OpNewFactoryUnit,
-//  class TList = typename AbstractFactory::ProductList>
-//class MyConcreteFactory : public AbstractFactory
-//  , TupleImpl<typename AbstractFactory::ProductList, TList, std::make_index_sequence<mp::mp_size<TList>::value>, Creator>
-//
-//{
-//public:
-//  typedef typename AbstractFactory::ProductList ProductList;
-//  typedef TList ConcreteProductList;
-//};
-//
-//template<
-//  class AbstractFact,
-//  template<class, class> class Creator = OpNewFactoryUnit,
-//  class TList = typename AbstractFact::ProductList>
-//class ConcreteFactory
-//  : public GenLinearHierarchy<
-//      typename TL::Reverse<TList>::Result,
-//      Creator,
-//      AbstractFact>
-//{
-//public:
-//  typedef typename AbstractFact::ProductList ProductList;
-//  typedef TList ConcreteProductList;
-//};
+
+template<
+  class AbstractFact,
+  template<class, class> class Creator = OpNewFactoryUnit,
+  class TList = typename AbstractFact::ProductList>
+class ConcreteFactory
+  : public GenLinearHierarchy<
+      mp::mp_reverse<TList>,
+      Creator,
+      AbstractFact>
+{
+public:
+  typedef typename AbstractFact::ProductList ProductList;
+  typedef TList ConcreteProductList;
+};
 
 }// namespace Loki
 
