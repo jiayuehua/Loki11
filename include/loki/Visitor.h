@@ -136,6 +136,7 @@ class Visitor
   , public VisitorProductBase<Head, R, constparam>...
 {
 public:
+  using VisitorProductBase<Head, R, constparam>::Visit...;
   typedef R ReturnType;
 };
 
@@ -299,8 +300,7 @@ protected:// give access only to the hierarchy
 ////////////////////////////////////////////////////////////////////////////////
 
 template<typename R, bool ConstParam, class... TList>
-class CyclicVisitor : public BaseVisitor
-  , public Visitor<R, ConstParam, TList...>
+class CyclicVisitor : public Visitor<R, ConstParam, TList...>
 {
 public:
   typedef R ReturnType;
