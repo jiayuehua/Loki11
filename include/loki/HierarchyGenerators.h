@@ -52,15 +52,8 @@ namespace Private {
   struct ScatterHierarchyTag;
 }// namespace Private
 
-template<template<class> class Unit, class T, auto = []() constexpr {}>
-struct S : public Unit<T>
-{
-};
-
-//template<class TList, template<class> class Unit>
-//class GenScatterHierarchy;
-template<template<class> class Unit, class... Tlist>
-class GenScatterHierarchy : public S<Unit, Tlist>...
+template<template<class> class Unit, class... T>
+class GenScatterHierarchy : public Unit<T>...
 {
 };
 

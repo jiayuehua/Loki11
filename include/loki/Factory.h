@@ -18,7 +18,7 @@
 // $Id: Factory.h 788 2006-11-24 22:30:54Z clitte_bbt $
 
 
-#include "LokiTypeInfo.h"
+#include <boost/type_index.hpp>
 #include <functional>
 #include <boost/container/flat_map.hpp>
 #include "SmallObj.h"
@@ -194,14 +194,14 @@ template<
   template<typename, class>
   class FactoryErrorPolicy = DefaultFactoryError>
 class CloneFactory
-  : public FactoryErrorPolicy<TypeInfo, AbstractProduct>
+  : public FactoryErrorPolicy<boost::typeindex::type_index, AbstractProduct>
 {
 public:
   template<class T>
   bool Register(ProductCreator creator)
   {
     return associations_.insert(
-                          typename IdToProductMap::value_type(typeid(T), creator))
+                          typename IdToProductMap::value_type(boost::typeindex::type_id<T>(), creator))
              .second
            != 0;
   }
@@ -228,7 +228,7 @@ public:
   }
 
 private:
-  typedef std::map<TypeInfo, ProductCreator> IdToProductMap;
+  typedef std::map<boost::typeindex::type_index, ProductCreator> IdToProductMap;
   IdToProductMap associations_;
 };
 

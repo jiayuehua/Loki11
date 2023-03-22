@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Unit Test for Loki
 //
-// Copyright Terje Slettebø and Pavel Vozenilek 2002.
+// Copyright Terje Sletteb?and Pavel Vozenilek 2002.
 //
 // Permission to use, copy, modify, and distribute this software for any
 // purpose is hereby granted without fee, provided that this copyright and
@@ -97,9 +97,9 @@ namespace FactoryTestPrivate
   {
     CloneFactoryType factory;
 
-    factory.Register(Loki::TypeInfo(typeid(Polygon)), reinterpret_cast<Shape* (*)(const Shape*)>(clonePolygon));
-    factory.Register(Loki::TypeInfo(typeid(Circle)), reinterpret_cast<Shape* (*)(const Shape*)>(cloneCircle));
-    factory.Register(Loki::TypeInfo(typeid(Line)), reinterpret_cast<Shape* (*)(const Shape*)>(cloneLine));
+    factory.Register(boost::typeindex::type_id<Polygon>(), reinterpret_cast<Shape* (*)(const Shape*)>(clonePolygon));
+    factory.Register(boost::typeindex::type_id<Circle>(), reinterpret_cast<Shape* (*)(const Shape*)>(cloneCircle));
+    factory.Register(boost::typeindex::type_id<Line>(),reinterpret_cast<Shape* (*)(const Shape*)>(cloneLine));
 
     Polygon p;
     Circle c;

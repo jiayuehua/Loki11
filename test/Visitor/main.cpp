@@ -15,6 +15,7 @@
 
 #include <loki/Visitor.h>
 #include <iostream>
+#include <memory>
 
 class Base : public Loki::BaseVisitable<>
 {
@@ -27,9 +28,15 @@ class Type1 : public Base
  public:
   LOKI_DEFINE_VISITABLE()
 };
+using LokiVisitor = Loki::Visitor<void, false, Base, Type1>;
 
 class VariableVisitor : public Loki::Visitor < void
   , false,Base, Type1 > {
+ public:
+  void Visit(Base&) { std::cout << "void Visit(Base&)\n"; }
+  void Visit(Type1&) { std::cout << "void Visit(Type1&)\n"; }
+};
+class MyVariableVisitor   {
  public:
   void Visit(Base&) { std::cout << "void Visit(Base&)\n"; }
   void Visit(Type1&) { std::cout << "void Visit(Type1&)\n"; }
