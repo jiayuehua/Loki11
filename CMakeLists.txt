@@ -74,7 +74,6 @@ endif()
 #
 ## enable testing
 if(ENABLE_TESTING)
-   message(STATUS "Enabling TestingA")
   add_subdirectory(test)
 endif()
 #enable_testing()
