@@ -21,6 +21,13 @@ update andrei's loki lib to C++11
     
  分别用于表示创建方法不带参数，带一个参数，带两个参数等等。可以看到借助于variadic template我们用一个模板替换了以前的n个成员函数。
 
+<!--TOC-->
+  - [Factory使用方法](#factory)
+  - [visitor](#visitor)
+  - [AbstractFactory 和ConcreteFactory用法概览](#abstractfactory-concretefactory)
+<!--/TOC-->
+
+
  ## Factory使用方法
 
  Factory模板位于loki/Factory.h
@@ -165,70 +172,177 @@ creator 是用来创建对象的functor, 能接受参数Param...，返回类型为AbstractProduct指
       pObject->get_x() = 5
       pObject->get_y() = 5
     
-# visitor 用法 
+## visitor
 
  visitor模式是一种设计模式，它可以在不改变数据结构的情况下，为数据结构中的元素添加新的操作。visitor模式的目的是将数据结构与数据操作分离。visitor模式的优点是增加新的操作很容易，因为增加新的操作就意味着增加一个新的visitor。
+
+若要实作Acyclic Visitor，请使用 Basevisitor作为"strawman" base class及 visitor和visitable:
+
+    class BaseVisitor;
+
+    template<typename R, bool constparam, class... Head>
+    class Visitor;
+
+    template<
+      typename R = void,
+      bool ConstVisitable = false,
+      template<typename, class> class CatchAll = DefaultCatchAll>
+    class BaseVisitable;
+
+Visitor和BaseVisitable的第一个template参数分别是成员函数Visit()的返回值类型和BaseVisitable的返回值类型。第二个参数指定Visit()的参数是否为const引用。
+BaseVisitable的第三个template参数是个policy，用来处理catch-all问题
+
+从BaseVisitable派生出你的继承体系的root class,然后在这个继承体系的每一个class中使用宏DEFINE_VISITABLE()。
+
+从Visitor<R,ConstVisitable ,Product... >中派生出你的concrete visitor classes，这里的Product是你的产品继承体系里的所有的类型，并针对继承体系中的每一个类实作出成员函数 Visit:
+
+    class VariableVisitor : public Loki::Visitor < void
+      , false,Shape, Circle > {
+     public:
+      void Visit(Shape&) { std::cout << "void Visit(Shape&)\n"; }
+      void Visit(Circle&) { std::cout << "void Visit(Circle&)\n"; }
+    };
+
 
  例子:
  
     #include <loki/Visitor.h>
     #include <iostream>
 
-    class Base : public Loki::BaseVisitable<>
+    class Shape : public Loki::BaseVisitable<>
     {
      public:
       LOKI_DEFINE_VISITABLE()
     };
 
-    class Type1 : public Base
+    class Circle : public Shape
     {
      public:
       LOKI_DEFINE_VISITABLE()
     };
 
     class VariableVisitor : public Loki::Visitor < void
-      , false,Base, Type1 > {
+      , false,Shape, Circle > {
      public:
-      void Visit(Base&) { std::cout << "void Visit(Base&)\n"; }
-      void Visit(Type1&) { std::cout << "void Visit(Type1&)\n"; }
+      void Visit(Shape&) { std::cout << "void Visit(Shape&)\n"; }
+      void Visit(Circle&) { std::cout << "void Visit(Circle&)\n"; }
     };
 
-    class CBase : public Loki::BaseVisitable<void,true>
+    class CShape : public Loki::BaseVisitable<void,true>
     {
      public:
       LOKI_DEFINE_CONST_VISITABLE()
     };
 
-    class CType1 : public CBase
+    class CCircle : public CShape
     {
      public:
       LOKI_DEFINE_CONST_VISITABLE()
     };
 
-    class CVariableVisitor : public Loki::Visitor<void,true, CBase,CType1>
+    class CVariableVisitor : public Loki::Visitor<void,true, CShape,CCircle>
     {
      public:
-      void Visit(const CBase&) { std::cout << "void Visit(CBase&)\n"; }
-      void Visit(const CType1&) { std::cout << "void Visit(CType1&)\n"; }
+      void Visit(const CShape&) { std::cout << "void Visit(CShape&)\n"; }
+      void Visit(const CCircle&) { std::cout << "void Visit(CCircle&)\n"; }
     };
 
     int main()
     {
       VariableVisitor visitor;
-      Type1           type1;
-      Base*           dyn = &type1;
-      Base           base ;
+      Circle           circle;
+      Shape*           dyn = &circle;
+      Shape           shape ;
       dyn->Accept(visitor);
-      dyn = &base;
+      dyn = &shape;
       dyn->Accept(visitor);
 
       CVariableVisitor cvisitor;
-      CType1           ctype1;
-      CBase*           cdyn = &ctype1;
+      CCircle           ccircle;
+      CShape*           cdyn = &ccircle;
       cdyn->Accept(cvisitor);
-      CBase cbase;
-      cdyn = &cbase;
+      CShape cshape;
+      cdyn = &cshape;
       cdyn->Accept(cvisitor);
     }
-     
-  
+
+## AbstractFactory 和ConcreteFactory用法概览
+
+
+    template<class... U>
+    using AbstractFactory = ...;
+
+其中U...参数包，用来指定这个Factory将要生成的abstract products。例如
+
+using AbstractEnemyFactory=AbstractFactory<Soldier, Monster>;
+
+AbstractFactory提供一个名为Create()的成员函数，可以用abstract products中的一个类型来实例化，用于创建一个abstract product。例如
+
+    AbstractEnemyFactory factory;
+    auto soldier = factory.Create<Soldier>();
+    auto monster = factory.Create<Monster>();
+
+  为实现AbstractFactory所定义的接口，Loki提供了一个concreteFactory template，大致如下:
+
+    template<class AbstractFact, 
+    class TList = typename AbstractFact::ProductList>
+      using ConcreteFactory = ...;
+    
+   其中AbstractFact是将被实作出来之AbstractFactory模板的实例，如上文的AbstractEnemyFactory，TList是concrete products typelist，如mp::mp_list<SillySoldier,SillyMonster>。
+
+   例子:
+
+    #include <iostream>
+    #include <string>
+    #include <memory>
+    #include <loki/AbstractFactory.h>
+
+
+    using namespace Loki;
+    using std::cout;
+    using std::endl;
+
+    struct Soldier
+    {
+    public:
+      virtual ~Soldier(){};
+
+      virtual void print() const {
+      
+        cout << "Soldier\n";
+      }
+    };
+
+    struct SillySoldier:public Soldier
+    {
+    public:
+      virtual void print() const {
+        cout << "SillySoldier\n";
+      }
+    };
+
+    struct Monster
+    {
+    public:
+      virtual ~Monster() =default;
+      virtual void print() const = 0;
+    };
+
+    struct SillyMonster:public Monster
+    {
+    public:
+      virtual void print() const {
+        cout << "SillyMonster\n";
+      }
+    };
+    using AbstractEnemyFactory=AbstractFactory<Soldier, Monster>;
+
+    using ConcreteEnemyFactory= ConcreteFactory<AbstractEnemyFactory, mp::mp_list<SillySoldier,SillyMonster>> ;
+    int main() {
+      ConcreteEnemyFactory cef;
+      AbstractEnemyFactory *pA = &cef;
+      auto pS = pA->Create<Soldier>();
+      std::unique_ptr<Soldier> p(pS);
+      p->print();
+    }
+

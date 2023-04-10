@@ -179,7 +179,7 @@ template<
   class AbstractFact,
   template<class, class> class Creator = OpNewFactoryUnit,
   class TList = typename AbstractFact::ProductList>
-class ConcreteFactory
+class ConcreteFactoryEx
   : public GenLinearHierarchy<
       mp::mp_reverse<TList>,
       Creator,
@@ -190,6 +190,10 @@ public:
   typedef TList ConcreteProductList;
 };
 
+template<
+  class AbstractFact,
+  class TList = typename AbstractFact::ProductList>
+using ConcreteFactory= ConcreteFactoryEx<AbstractFact, OpNewFactoryUnit, TList>;
 }// namespace Loki
 
 

@@ -59,7 +59,7 @@ public:
 };
 using AbstractEnemyFactory=AbstractFactory<Soldier, Monster>;
 
-using ConcreteEnemyFactory= ConcreteFactory<AbstractEnemyFactory, OpNewFactoryUnit,mp::mp_list<SillySoldier,SillyMonster>> ;
+using ConcreteEnemyFactory= ConcreteFactory<AbstractEnemyFactory, mp::mp_list<SillySoldier,SillyMonster>> ;
 int main() {
   ConcreteEnemyFactory cef;
   AbstractEnemyFactory *pA = &cef;

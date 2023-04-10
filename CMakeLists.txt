@@ -14,9 +14,9 @@ target_compile_features(project_options INTERFACE cxx_std_20)
 add_library(project_warnings INTERFACE)
 
 # iwyu
-include(cmake/Iwyu.cmake)
+#include(cmake/Iwyu.cmake)
 # enable cache system
-include(cmake/Cache.cmake)
+#include(cmake/Cache.cmake)
 
 # standard compiler warnings
 include(cmake/CompilerWarnings.cmake)
@@ -74,6 +74,7 @@ endif()
 #
 ## enable testing
 if(ENABLE_TESTING)
+   message(STATUS "Enabling TestingA")
   add_subdirectory(test)
 endif()
 #enable_testing()
