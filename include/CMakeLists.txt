@@ -11,5 +11,5 @@ target_include_directories(loki PUBLIC
 ${BOOST_MP11_INCLUDE_DIRS}
            )
 target_link_libraries(
-  loki PUBLIC project_options project_warnings Boost::boost 
+  loki PUBLIC project_options project_warnings Boost::boost
                 )

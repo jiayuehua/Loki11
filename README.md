@@ -10,7 +10,7 @@ update andrei's loki lib to C++11
 以factory为例说明，Loki11工厂创建抽象对象只有一个成员模板
 
     template<class ID, class... Arg>
-    AbstractProduct *CreateObject(const ID &id, Arg &&...arg)
+    std::unique_ptr<AbstractProduct> CreateObject(const ID &id, Arg &&...arg)
 
  而loki的factory有许多成员
 
@@ -22,13 +22,13 @@ update andrei's loki lib to C++11
  分别用于表示创建方法不带参数，带一个参数，带两个参数等等。可以看到借助于variadic template我们用一个模板替换了以前的n个成员函数。
 
 <!--TOC-->
-  - [Factory使用方法](#factory)
+  - [Factory](#factory)
   - [visitor](#visitor)
-  - [AbstractFactory 和ConcreteFactory用法概览](#abstractfactory-concretefactory)
+  - [AbstractFactory](#abstractfactory)
 <!--/TOC-->
 
 
- ## Factory使用方法
+ ## Factory
 
  Factory模板位于loki/Factory.h
  声明
@@ -49,12 +49,12 @@ FactoryErrorPolicy用于指定错误处理的策略。
 
 Factory实作出以下基本操作
 
-    bool Register(const IdentifierType &id, const std::function<AbstractProduct *(Param...)>& creator)
-creator 是用来创建对象的functor, 能接受参数Param...，返回类型为AbstractProduct指针。
+    bool Register(const IdentifierType &id, const std::function<std::unique_ptr<AbstractProduct> (Param...)>& creator)
+creator 是用来创建对象的functor, 能接受参数Param...，返回类型为std::unique_ptr\<AbstractProduct>。
 
 
       template<class ID, class... Arg>
-      AbstractProduct *CreateObject(const ID &id, Arg &&...arg);
+      std::unique_ptr<AbstractProduct> CreateObject(const ID &id, Arg &&...arg);
 
 以上函数查询id是否注册过，如果注册过的话，调用id对应的creator方法，参数为arg...来创建对象，返回结果。
 例子：
@@ -89,7 +89,7 @@ creator 是用来创建对象的functor, 能接受参数Param...，返回类型为AbstractProduct指
 
     public:
       Product() = default;
-      Product(int xa, int ya) : x(xa), y(ya) {}
+      Product(int xa, int ya) : x(std::move(xa)), y(std::move(ya)) {}
       int get_x() const
       {
         return x;
@@ -118,17 +118,30 @@ creator 是用来创建对象的functor, 能接受参数Param...，返回类型为AbstractProduct指
     // Creator functions with different names
     ////////////////////////////////////////////////////
 
-    Product *createProductNull()
+    std::unique_ptr<Product >createProductNull()
     {
       cout << "createProductNull()" << endl;
-      return new Product;
+      return std::make_unique<Product>();
     }
-    Product *createProductParm(int a, int b)
+    auto createProductParm(int a, int b)
     {
       cout << "createProductParm( int a, int b ) " << endl;
-      return new Product(a, b);
+      return std::make_unique<Product>(a,b);
     }
 
+    ///////////////////////////////////////////////////
+    // Overloaded creator functions
+    ///////////////////////////////////////////////////
+    auto createProductNullOver()
+    {
+      cout << "createProductOver()" << endl;
+      return std::make_unique<Product>();
+    }
+    auto createProductParmOver(int a, int b)
+    {
+      cout << "createProductOver( int a, int b )" << endl;
+      return std::make_unique<Product>(a,b);
+    }
 
 
     void testFactoryNull()
@@ -162,6 +175,7 @@ creator 是用来创建对象的functor, 能接受参数Param...，返回类型为AbstractProduct指
       testFactoryNull();
       testFactoryBinary();
     }
+
     
  输出：
 
@@ -266,7 +280,7 @@ BaseVisitable的第三个template参数是个policy，用来处理catch-all问题
       cdyn->Accept(cvisitor);
     }
 
-## AbstractFactory 和ConcreteFactory用法概览
+## AbstractFactory
 
 
     template<class... U>

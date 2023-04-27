@@ -73,29 +73,29 @@ typedef Factory<int, DefaultFactoryError, AbstractProduct, int, int>
 // Creator functions with different names
 ////////////////////////////////////////////////////
 
-Product *createProductNull()
+std::unique_ptr<Product >createProductNull()
 {
   cout << "createProductNull()" << endl;
-  return new Product;
+  return std::make_unique<Product>();
 }
-Product *createProductParm(int a, int b)
+auto createProductParm(int a, int b)
 {
   cout << "createProductParm( int a, int b ) " << endl;
-  return new Product(a, b);
+  return std::make_unique<Product>(a,b);
 }
 
 ///////////////////////////////////////////////////
 // Overloaded creator functions
 ///////////////////////////////////////////////////
-Product *createProductNullOver()
+auto createProductNullOver()
 {
   cout << "createProductOver()" << endl;
-  return new Product;
+  return std::make_unique<Product>();
 }
-Product *createProductParmOver(int a, int b)
+auto createProductParmOver(int a, int b)
 {
   cout << "createProductOver( int a, int b )" << endl;
-  return new Product(a, b);
+  return std::make_unique<Product>(a,b);
 }
 
 

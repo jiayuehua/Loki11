@@ -25,6 +25,7 @@
 #include <utility>
 #include <type_traits>
 #include <map>
+#include <memory>
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -98,7 +99,7 @@ struct DefaultFactoryError
     const char *what() const throw() { return "Unknown Type"; }
   };
 
-  static AbstractProduct *OnUnknownType(const IdentifierType &)
+  static std::unique_ptr<AbstractProduct> OnUnknownType(const IdentifierType &)
   {
     throw Exception();
   }
@@ -140,7 +141,7 @@ template<
   class... Param>
 class Factory : public FactoryErrorPolicy<IdentifierType, AbstractProduct>
 {
-  typedef std::function<AbstractProduct *(Param...)> ProductCreator;
+  typedef std::function<std::unique_ptr<AbstractProduct> (Param...)> ProductCreator;
 
   typedef std::map<IdentifierType, ProductCreator> IdToProductMap;
 
@@ -166,7 +167,7 @@ public:
 
   template<class ID, class... Arg>
   std::enable_if_t<sizeof...(Arg)==sizeof...(Param)&&std::conjunction_v<std::is_convertible<ID,IdentifierType>,
-  std::is_convertible< Arg&&,Param>...>, AbstractProduct> *CreateObject(ID &&id, Arg &&...arg)const
+  std::is_convertible< Arg&&,Param>...>, std::unique_ptr<AbstractProduct>> CreateObject(ID &&id, Arg &&...arg)const
   {
     typename IdToProductMap::const_iterator i = associations_.find(id);
     if (i != associations_.end()) {

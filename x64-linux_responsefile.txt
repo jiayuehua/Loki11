@@ -1,9 +1,4 @@
-boost-spirit
 boost-hana
 boost-mp11
-range-v3
-catch2
-fmt
-TBB
 --triplet
 x64-linux
