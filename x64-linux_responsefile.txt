@@ -1,4 +1,7 @@
 boost-hana
 boost-mp11
+boost-container 
+boost-callable-traits 
+boost-type-index
 --triplet
 x64-linux
