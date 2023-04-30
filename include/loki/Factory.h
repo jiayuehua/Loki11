@@ -191,7 +191,7 @@ public:
 template<
   class AbstractProduct,
   class ProductCreator =
-    AbstractProduct *(*)(const AbstractProduct *),
+    std::unique_ptr<AbstractProduct> (*)(const AbstractProduct *),
   template<typename, class>
   class FactoryErrorPolicy = DefaultFactoryError>
 class CloneFactory
@@ -213,10 +213,10 @@ public:
     return associations_.erase(typeid(T)) != 0;
   }
 
-  AbstractProduct *CreateObject(const AbstractProduct *model)
+  std::unique_ptr<AbstractProduct> CreateObject(const AbstractProduct *model)
   {
-    if (model == NULL) {
-      return NULL;
+    if (model == nullptr) {
+      return nullptr;
     }
 
     typename IdToProductMap::iterator i =

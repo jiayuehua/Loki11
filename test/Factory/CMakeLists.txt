@@ -6,3 +6,7 @@ add_executable(factory Factory.cpp)
 target_link_libraries(
   factory PRIVATE loki 
                 )
+add_executable(clonefactory CloneFactory.cpp)
+target_link_libraries(
+  clonefactory PRIVATE loki 
+                )
