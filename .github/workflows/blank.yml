@@ -15,16 +15,11 @@ jobs:
     strategy:
       matrix:
         
-        vstriplet: ['WSL-Clang-Debug','WSL-GCC-Debug']
+        vstriplet: ['WSL-GCC-Debug']
                 
 
         include:
         
-          - os: 'ubuntu-20.04'
-            triplet: 'x64-linux'
-            # To run `nuget.exe` on non-Windows platforms, we must use `mono`.
-            mono: 'mono'
-            vstriplet: 'WSL-Clang-Debug'
             
       
           - os: 'ubuntu-20.04'
