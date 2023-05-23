@@ -2,7 +2,7 @@
 
 find_path(BOOST_MP11_INCLUDE_DIRS "boost/mp11.hpp")
 find_package(Boost REQUIRED  )
-add_library(loki  OrderedStatic.cpp SafeFormat.cpp Singleton.cpp SmallObj.cpp )
+add_library(loki  OrderedStatic.cpp  Singleton.cpp SmallObj.cpp SmartPtr.cpp StrongPtr.cpp  "loki/ThreadModel.h")
 #add_library(loki )
 target_compile_options(loki PRIVATE -fconcepts)
 

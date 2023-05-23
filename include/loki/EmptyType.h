@@ -26,23 +26,10 @@ namespace Loki
 // Useful as a strawman class
 ////////////////////////////////////////////////////////////////////////////////
 
-    class EmptyType {};
-    
-    
-    inline bool operator==(const EmptyType&, const EmptyType&)
-    {
-        return true;
-    }   
-
-    inline bool operator<(const EmptyType&, const EmptyType&)
-    {
-        return false;
-    }
-    
-    inline bool operator>(const EmptyType&, const EmptyType&)
-    {
-        return false;
-    }
+    class EmptyType {
+    bool operator==( const EmptyType&)const=default;
+    auto operator<=>( const EmptyType&)const=default;
+    };
 }
 
 #endif // end file guardian

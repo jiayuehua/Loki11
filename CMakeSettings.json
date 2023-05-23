@@ -1,33 +1,6 @@
 ﻿{
   "configurations": [
     {
-      "name": "WSL-Clang-Debug",
-      "generator": "Unix Makefiles",
-      "configurationType": "Debug",
-      "buildRoot": "${projectDir}\\out\\build\\${name}",
-      "installRoot": "${projectDir}\\out\\install\\${name}",
-      "cmakeExecutable": "cmake",
-      "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
-      "ctestCommandArgs": "",
-      "inheritEnvironments": [ "linux_clang_x64" ],
-      "wslPath": "${defaultWSLPath}",
-      "addressSanitizerRuntimeFlags": "detect_leaks=0",
-      "clangTidyChecks": "*",
-      "variables": [
-        {
-          "name": "ENABLE_TESTING",
-          "value": "True",
-          "type": "BOOL"
-        },
-        {
-          "name": "CMAKE_CXX_FLAGS",
-          "value": "-std=c++20",
-          "type": "STRING"
-        }
-      ]
-    },
-    {
       "name": "WSL-GCC-Debug",
       "generator": "Ninja",
       "configurationType": "Debug",

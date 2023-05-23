@@ -190,7 +190,7 @@ public:
          Please don't use this policy with incomplete types; you may want to
          use DeleteNothing instead.
          */
-    typedef char Type_Must_Be_Defined[sizeof(P) ? 1 : -1];
+    typedef char Type_Must_Be_Defined[sizeof(P) ? static_cast<std::size_t>(1) :static_cast<std::size_t>(-1)];
     delete p;
   }
 
@@ -221,7 +221,7 @@ public:
          Please don't use this policy with incomplete types; you may want to
          use DeleteNothing instead.
          */
-    typedef char Type_Must_Be_Defined[sizeof(P) ? 1 : -1];
+    typedef char Type_Must_Be_Defined[sizeof(P) ? static_cast<std::size_t>(1) :static_cast<std::size_t>(-1)];
     delete[] p;
   }
 

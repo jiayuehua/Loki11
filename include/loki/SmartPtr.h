@@ -695,7 +695,7 @@ public:
   template<class P1>
   DestructiveCopy(const DestructiveCopy<P1> &)
     requires false
-  {};
+  {}
 
   DestructiveCopy(const DestructiveCopy<P> &)
     requires false
@@ -706,7 +706,7 @@ public:
   DestructiveCopy(DestructiveCopy<P1> &&)
   {
     std::cout << "DestructiveCopy move other cons\n";
-  };
+  }
 
   DestructiveCopy(DestructiveCopy<P> &&)
   {
