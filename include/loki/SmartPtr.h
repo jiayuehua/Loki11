@@ -31,7 +31,7 @@
 
 #include "LokiExport.h"
 #include "SmallObj.h"
-#include "RefToValue.h"
+#include <functional>
 #include "ConstPolicy.h"
 
 #include <functional>
@@ -498,7 +498,7 @@ struct RefCountedMTAdj
       : pCount_(rhs.pCount_)
     {}
 
-    //MWCW lacks template friends, hence the following kludge
+    // MWCW lacks template friends, hence the following kludge
     template<typename P1>
     RefCountedMT(const RefCountedMT<P1> &rhs)
       : pCount_(reinterpret_cast<const RefCountedMT<P> &>(rhs).pCount_)
@@ -693,9 +693,13 @@ public:
   {}
 
   template<class P1>
-  DestructiveCopy(const DestructiveCopy<P1> &) requires false {};
+  DestructiveCopy(const DestructiveCopy<P1> &)
+    requires false
+  {};
 
-  DestructiveCopy(const DestructiveCopy<P> &) requires false = default;
+  DestructiveCopy(const DestructiveCopy<P> &)
+    requires false
+  = default;
 
   template<class P1>
   //  requires(!std::is_same_v<std::remove_cvref_t<P1>, std::remove_cvref_t<P>>)
@@ -743,14 +747,20 @@ public:
   NoCopy()
   {}
 
-  NoCopy(const NoCopy<P> &) requires false = default;
+  NoCopy(const NoCopy<P> &)
+    requires false
+  = default;
 
-  NoCopy(NoCopy<P> &&) requires false = default;
+  NoCopy(NoCopy<P> &&)
+    requires false
+  = default;
   template<class P1>
-  requires false NoCopy(const NoCopy<P1> &) = delete;
+    requires false
+  NoCopy(const NoCopy<P1> &) = delete;
 
   template<class P1>
-  requires false NoCopy(NoCopy<P1> &&);
+    requires false
+  NoCopy(NoCopy<P1> &&);
   static P Clone(const P &)
   {
     // Make it depended on template parameter
@@ -1162,11 +1172,11 @@ private:
   };
 
 #ifdef LOKI_SMARTPTR_CONVERSION_CONSTRUCTOR_POLICY
-  //typedef typename std::conditional<CP::allow, const StoredType &, NeverMatched>::type ImplicitArg;
-  //typedef typename std::conditional<!CP::allow, const StoredType &, NeverMatched>::type ExplicitArg;
+  // typedef typename std::conditional<CP::allow, const StoredType &, NeverMatched>::type ImplicitArg;
+  // typedef typename std::conditional<!CP::allow, const StoredType &, NeverMatched>::type ExplicitArg;
 #else
   typedef const StoredType &ExplicitArg;
-  //typedef typename std::conditional<false, const StoredType &, NeverMatched>::type ExplicitArg;
+  // typedef typename std::conditional<false, const StoredType &, NeverMatched>::type ExplicitArg;
 #endif
 
 public:
@@ -1181,16 +1191,16 @@ public:
   }
 
 
-  SmartPtr(const CopyArg &rhs) requires std::is_copy_constructible_v<OP>
-    : SP(rhs)
-    , OP(rhs)
-    , KP(rhs)
+  SmartPtr(const CopyArg &rhs)
+    requires std::is_copy_constructible_v<OP>
+    : SP(rhs), OP(rhs), KP(rhs)
   {
     GetImplRef(*this) = OP::Clone(GetImplRef(rhs));
   }
 
 
-  SmartPtr(SmartPtr &&rhs) requires(std::is_move_constructible_v<OP>)
+  SmartPtr(SmartPtr &&rhs)
+    requires(std::is_move_constructible_v<OP>)
     : SP(rhs), OP(std::move(rhs)), KP(rhs)
   {
     std::cout << "SP move construc\n";
@@ -1198,7 +1208,8 @@ public:
   }
   template<
     typename T1>
-  SmartPtr(SmartPtr<T1> &&rhs) requires(!std::same_as<T, T1> && std::is_move_constructible_v<OP>)
+  SmartPtr(SmartPtr<T1> &&rhs)
+    requires(!std::same_as<T, T1> && std::is_move_constructible_v<OP>)
     : SP(rhs), OP(std::move(rhs)), KP(rhs)
   {
     GetImplRef(*this) = OP::Clone(GetImplRef(rhs));

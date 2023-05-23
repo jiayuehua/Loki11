@@ -19,6 +19,7 @@
 
 #include <loki/SmartPtr.h>
 #include <type_traits>
+#include <functional>
 #if defined(LOKI_OBJECT_LEVEL_THREADING) || defined(LOKI_CLASS_LEVEL_THREADING)
 #include <loki/Threads.h>
 #endif
@@ -926,14 +927,14 @@ public:
   {
   }
 
-  StrongPtr(RefToValue<StrongPtr> rhs)
+  StrongPtr(std::reference_wrapper<StrongPtr> rhs)
     : OP(rhs, Strong), KP(rhs), CP(rhs), DP(rhs)
   {
   }
 
-  operator RefToValue<StrongPtr>(void)
+  operator std::reference_wrapper<StrongPtr>(void)
   {
-    return RefToValue<StrongPtr>(*this);
+    return std::ref(*this);
   }
 
   StrongPtr &operator=(const StrongPtr &rhs)
