@@ -2,7 +2,6 @@
 
 add_executable(thread Thread.cpp)
 #find_package(folly CONFIG REQUIRED)
-
 target_link_libraries(
-  thread PRIVATE loki 
+  thread PRIVATE loki Thread::Threads
                 )

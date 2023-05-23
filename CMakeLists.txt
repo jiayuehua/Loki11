@@ -37,6 +37,7 @@ option(BUILD_SHARED_LIBS "Enable compilation of shared libraries" OFF)
 option(ENABLE_TESTING "Enable Test Builds" OFF)
 
 
+find_package(Threads REQUIRED)
 
 add_subdirectory(include)
 
