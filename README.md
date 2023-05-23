@@ -389,9 +389,9 @@ CloneFactory实作出以下基本操作:
 
  T是AbstractProduct的一个derived class，这个函数将取消CloneFacotry相应的T类型clone功能的注册。
 
-  std::unique_ptr<AbstractProduct> CreateObject(const AbstractProduct *model);
+      std::unique_ptr<AbstractProduct> CreateObject(const AbstractProduct *model);
  
- input参数model是一个AbstractProduct的对象，这个函数在内部map中查找model的动态型别，如果找到将复制model的动态型别，返回复制的对象的unique_ptr指针。如果没找到，将调用FactoryErrorPolicy<boost::typeindex::type_index, AbstractProduct>的OnUnknownType()函数。
+ input参数model是一个AbstractProduct的对象，这个函数在内部map中查找model的动态型别，如果找到将复制model的动态型别，返回复制的对象的unique_ptr指针。如果没找到，将调用FactoryErrorPolicy\<boost::typeindex::type_index, AbstractProduct>的OnUnknownType()函数。
 
 例子:
 
