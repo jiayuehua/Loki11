@@ -25,6 +25,7 @@ update andrei's loki lib to C++11
   - [Factory](#factory)
   - [visitor](#visitor)
   - [AbstractFactory](#abstractfactory)
+  - [CloneFactory](#clonefactory)
 <!--/TOC-->
 
 
@@ -360,3 +361,85 @@ AbstractFactory提供一个名为Create()的成员函数，可以用abstract products中的一个类
       p->print();
     }
 
+## CloneFactory
+CloneFactory的声明如下:
+
+    template<
+      class AbstractProduct,
+      class ProductCreator =
+        std::unique_ptr<AbstractProduct> (*)(const AbstractProduct *),
+      template<typename, class>
+      class FactoryErrorPolicy = DefaultFactoryError>
+    class CloneFactory
+
+其中AbstractProduct是继承体系要被clone的产品的基类，
+
+ProductCreator的角色是复制经由参数传入的对象，返回复制的对象的unique_ptr指针。
+
+CloneFactory实作出以下基本操作:
+
+      template<class T>
+      bool Register();
+ 
+ T是AbstractProduct的一个derived class，这个函数将T类型的clone功能注册到CloneFactory中，以便CloneFactory可以复制T的对象。
+
+
+      template<class T>
+      bool Unregister();
+
+ T是AbstractProduct的一个derived class，这个函数将取消CloneFacotry相应的T类型clone功能的注册。
+
+  std::unique_ptr<AbstractProduct> CreateObject(const AbstractProduct *model);
+ 
+ input参数model是一个AbstractProduct的对象，这个函数在内部map中查找model的动态型别，如果找到将复制model的动态型别，返回复制的对象的unique_ptr指针。如果没找到，将调用FactoryErrorPolicy<boost::typeindex::type_index, AbstractProduct>的OnUnknownType()函数。
+
+例子:
+
+    #include <iostream>
+    #include <string>
+    #include <loki/Factory.h>
+
+
+    using namespace Loki;
+    using std::cout;
+    using std::endl;
+
+
+    ////////////////////////////////////////////
+    // Object to clone: Product
+    ////////////////////////////////////////////
+
+    class Shape
+    {
+    public:
+      virtual void draw() = 0;
+      virtual ~Shape() = default;
+    };
+
+    class Circle : public Shape
+    {
+
+    public:
+      virtual void draw() { cout << "Circle" << endl; }
+    };
+
+    class Square : public Shape
+    {
+
+    public:
+      virtual void draw() { cout << "Square" << endl; }
+    };
+
+    int main()
+    {
+      using CF= CloneFactory<Shape>;
+      CF cf;
+      cf.Register<Square>();
+      cf.Register<Circle>();
+      Square s;
+      auto r = cf.CreateObject(&s);
+      r->draw();
+      Circle c;
+      auto rc = cf.CreateObject(&c);
+      rc->draw();
+    }

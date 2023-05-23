@@ -50,18 +50,12 @@ public:
   virtual void draw() { cout << "Square" << endl; }
 };
 
-template<class Base, class T>
-std::unique_ptr<Base> createT(const Base* ps)
-{
-  return std::make_unique<T>(*(static_cast<const T*>(ps)));
-}
-
 int main()
 {
   using CF= CloneFactory<Shape>;
   CF cf;
-  cf.Register<Square>(&createT<Shape,Square>);
-  cf.Register<Circle>(&createT<Shape,Circle>);
+  cf.Register<Square>();
+  cf.Register<Circle>();
   Square s;
   auto r = cf.CreateObject(&s);
   r->draw();

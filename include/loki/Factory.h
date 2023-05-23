@@ -188,6 +188,12 @@ public:
  *   \brief		Creates a copy from a polymorphic object.
  */
 
+template<class Base, class T>
+std::unique_ptr<Base> cloneProduct(const Base* ps)
+{
+  return std::make_unique<T>(*(static_cast<const T*>(ps)));
+}
+
 template<
   class AbstractProduct,
   class ProductCreator =
@@ -198,6 +204,12 @@ class CloneFactory
   : public FactoryErrorPolicy<boost::typeindex::type_index, AbstractProduct>
 {
 public:
+  template<class T>
+  bool Register()
+  {
+    return this->Register<T>(&cloneProduct<AbstractProduct,T>);
+  }
+
   template<class T>
   bool Register(ProductCreator creator)
   {
