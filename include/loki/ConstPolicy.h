@@ -52,9 +52,6 @@ namespace Loki
     };
 
 // default will not break existing code
-#ifndef LOKI_DEFAULT_CONSTNESS
-#define LOKI_DEFAULT_CONSTNESS ::Loki::DontPropagateConst
-#endif
 
 } // end namespace Loki
 

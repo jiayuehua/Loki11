@@ -821,7 +821,7 @@ private:
 ///  \param CheckingPolicy   default = AssertCheck,
 ///  \param ResetPolicy      default = CantResetWithStrong,
 ///  \param DeletePolicy     default = DeleteSingle
-///  \param ConstnessPolicy  default = LOKI_DEFAULT_CONSTNESS
+///  \param ConstnessPolicy  default = ::Loki::DontPropagateConst
 ////////////////////////////////////////////////////////////////////////////////
 
 template<
@@ -832,7 +832,7 @@ template<
   template<class> class CheckingPolicy = Loki::AssertCheck,
   template<class> class ResetPolicy = Loki::CantResetWithStrong,
   template<class> class DeletePolicy = Loki::DeleteSingle,
-  template<class> class ConstnessPolicy = LOKI_DEFAULT_CONSTNESS>
+  template<class> class ConstnessPolicy = ::Loki::DontPropagateConst>
 class StrongPtr
   : public OwnershipPolicy
   , public ConversionPolicy

@@ -14,6 +14,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #ifndef LOKI_SMARTPTR_INC_
 #define LOKI_SMARTPTR_INC_
+#include <atomic>
 
 // $Id: SmartPtr.h 903 2008-11-10 05:55:12Z rich_sposato $
 
@@ -243,16 +244,16 @@ template<class T>
 class Locker
 {
 public:
-  Locker(const T *p) : pointee_(const_cast<T *>(p))
+  Locker(T *p) : pointee_(p)
   {
     if (pointee_ != 0)
-      pointee_->Lock();
+      pointee_->lock();
   }
 
   ~Locker(void)
   {
     if (pointee_ != 0)
-      pointee_->Unlock();
+      pointee_->unlock();
   }
 
   operator T *()
@@ -299,11 +300,18 @@ public:
   }
 
   // Accessors
-  friend InitPointerType GetImpl(const LockedStorage &sp);
+  friend InitPointerType GetImpl(const LockedStorage& sp)
+  {
+    return sp.pointee_;
+  }
 
-  friend const StoredType &GetImplRef(const LockedStorage &sp);
+  friend const StoredType& GetImplRef(const LockedStorage& sp) {
+    return sp.pointee_;
+  }
 
-  friend StoredType &GetImplRef(LockedStorage &sp);
+  friend StoredType& GetImplRef(LockedStorage& sp) {
+    return sp.pointee_;
+  }
 
 protected:
   // Destroys the data stored
@@ -344,6 +352,7 @@ public:
   typedef T *InitPointerType;/// type used to declare OwnershipPolicy type.
   typedef T *PointerType;// type returned by operator->
   typedef T &ReferenceType;// type returned by operator*
+  typedef const T &ConstReferenceType;// type returned by operator*
 
   ArrayStorage() : pointee_(Default())
   {}
@@ -359,9 +368,7 @@ public:
 
   ArrayStorage(const StoredType &p) : pointee_(p) {}
 
-  PointerType operator->() const { return pointee_; }
-
-  ReferenceType operator*() const { return *pointee_; }
+  ReferenceType operator[](int index)const { return pointee_[index]; }
 
   void Swap(ArrayStorage &rhs)
   {
@@ -369,11 +376,20 @@ public:
   }
 
   // Accessors
-  friend PointerType GetImpl(const ArrayStorage &sp);
+  friend PointerType GetImpl(const ArrayStorage& sp)
+  {
+    return sp.pointee_;
+  }
 
-  friend StoredType &GetImplRef(const ArrayStorage &sp);
+  friend StoredType &GetImplRef(const ArrayStorage &sp)
+  {
+    return sp.pointee_;
+  }
 
-  friend StoredType &GetImplRef(ArrayStorage &sp);
+  friend StoredType &GetImplRef(ArrayStorage &sp)
+  {
+    return sp.pointee_;
+  }
 
 protected:
   // Destroys the data stored
@@ -417,17 +433,37 @@ public:
 
   RefCounted(const RefCounted &rhs)
     : pCount_(rhs.pCount_)
-  {}
+  {
+    ++*pCount_;
+  }
 
+  RefCounted(RefCounted &&rhs)
+    : pCount_(rhs.pCount_)
+  {
+    ++*pCount_;
+  }
+  RefCounted& operator=(RefCounted &&rhs)
+  {
+    auto tmp(std::move(rhs));
+    Swap(tmp);
+    return *this;
+  }
+  RefCounted& operator=(const RefCounted &rhs)
+  {
+    auto tmp(rhs);
+    Swap(tmp);
+    return *this;
+  }
   // MWCW lacks template friends, hence the following kludge
   template<typename P1>
   RefCounted(const RefCounted<P1> &rhs)
     : pCount_(reinterpret_cast<const RefCounted &>(rhs).pCount_)
-  {}
+  {
+    ++*pCount_;
+  }
 
   P Clone(const P &val)
   {
-    ++*pCount_;
     return val;
   }
 
@@ -435,7 +471,7 @@ public:
   {
     if (!--*pCount_) {
       SmallObject<>::operator delete(pCount_, sizeof(uintptr_t));
-      pCount_ = NULL;
+      pCount_ = nullptr;
       return true;
     }
     return false;
@@ -451,6 +487,60 @@ public:
 private:
   // Data
   uintptr_t *pCount_;
+};
+#include <iostream>
+template<class P>
+class RefCountedAtomic
+{
+public:
+  RefCountedAtomic()
+    : pCount_(new std::atomic<std::size_t>(0))
+  {
+    assert(pCount_ != 0);
+    *pCount_ = 1;
+  }
+
+  RefCountedAtomic(const RefCountedAtomic &rhs)
+    : pCount_(rhs.pCount_)
+  {
+    ++*(rhs.pCount_);
+    std::cout << *(rhs.pCount_) << std::endl;
+  }
+
+  // MWCW lacks template friends, hence the following kludge
+  template<typename P1>
+  RefCountedAtomic(const RefCountedAtomic<P1> &rhs)
+    : pCount_(rhs.pCount)
+  {
+    ++*(rhs.pCount_);
+    std::cout << *(rhs.pCount_) << std::endl;
+  }
+
+  P Clone(const P &val)
+  {
+    return val;
+  }
+
+  bool Release(const P &)
+  {
+    if (!--*pCount_) {
+      delete pCount_;
+      pCount_ = nullptr;
+      return true;
+    }
+    return false;
+  }
+
+  void Swap(RefCountedAtomic &rhs)
+  {
+    std::swap(pCount_, rhs.pCount_);
+  }
+
+  enum { destructiveCopy = false };
+
+private:
+  // Data
+  std::atomic<std::size_t> *pCount_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -472,108 +562,69 @@ private:
 ///  fixed at a higher design level, and no change to this class could fix it.
 ////////////////////////////////////////////////////////////////////////////////
 
-template<template<class, class> class ThreadingModel,
-  class MX = LOKI_DEFAULT_MUTEX>
-struct RefCountedMTAdj
-{
-  template<class P>
-  class RefCountedMT : public ThreadingModel<RefCountedMT<P>, MX>
-  {
-    typedef ThreadingModel<RefCountedMT<P>, MX> base_type;
-    typedef typename base_type::IntType CountType;
-    typedef volatile CountType *CountPtrType;
-
-  public:
-    RefCountedMT()
-    {
-      pCount_ = static_cast<CountPtrType>(
-        SmallObject<LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL>::operator new(
-          sizeof(*pCount_)));
-      assert(pCount_);
-      //*pCount_ = 1;
-      ThreadingModel<RefCountedMT, MX>::AtomicAssign(*pCount_, 1);
-    }
-
-    RefCountedMT(const RefCountedMT &rhs)
-      : pCount_(rhs.pCount_)
-    {}
-
-    // MWCW lacks template friends, hence the following kludge
-    template<typename P1>
-    RefCountedMT(const RefCountedMT<P1> &rhs)
-      : pCount_(reinterpret_cast<const RefCountedMT<P> &>(rhs).pCount_)
-    {}
-
-    P Clone(const P &val)
-    {
-      ThreadingModel<RefCountedMT, MX>::AtomicIncrement(*pCount_);
-      return val;
-    }
-
-    bool Release(const P &)
-    {
-      bool isZero = false;
-      ThreadingModel<RefCountedMT, MX>::AtomicDecrement(*pCount_, 0, isZero);
-      if (isZero) {
-        SmallObject<LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL>::operator delete(
-          const_cast<CountType *>(pCount_),
-          sizeof(*pCount_));
-        return true;
-      }
-      return false;
-    }
-
-    void Swap(RefCountedMT &rhs)
-    {
-      std::swap(pCount_, rhs.pCount_);
-    }
-
-    enum { destructiveCopy = false };
-
-  private:
-    // Data
-    CountPtrType pCount_;
-  };
-};
-
-////////////////////////////////////////////////////////////////////////////////
-///  \class COMRefCounted
-///
-///  \ingroup  SmartPointerOwnershipGroup
-///  Implementation of the OwnershipPolicy used by SmartPtr
-///  Adapts COM intrusive reference counting to OwnershipPolicy-specific syntax
-////////////////////////////////////////////////////////////////////////////////
-
-template<class P>
-class COMRefCounted
-{
-public:
-  COMRefCounted()
-  {}
-
-  template<class U>
-  COMRefCounted(const COMRefCounted<U> &)
-  {}
-
-  static P Clone(const P &val)
-  {
-    if (val != 0)
-      val->AddRef();
-    return val;
-  }
-
-  static bool Release(const P &val)
-  {
-    if (val != 0)
-      val->Release();
-    return false;
-  }
-
-  enum { destructiveCopy = false };
-
-  static void Swap(COMRefCounted &)
-  {}
-};
+// template<template<class, class> class ThreadingModel,
+//   class MX = LOKI_DEFAULT_MUTEX>
+// struct RefCountedMTAdj
+//{
+//   template<class P>
+//   class RefCountedMT : public ThreadingModel<RefCountedMT<P>, MX>
+//   {
+//     typedef ThreadingModel<RefCountedMT<P>, MX> base_type;
+//     typedef typename base_type::IntType CountType;
+//     typedef volatile CountType *CountPtrType;
+//
+//   public:
+//     RefCountedMT()
+//     {
+//       pCount_ = static_cast<CountPtrType>(
+//         SmallObject<LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL>::operator new(
+//           sizeof(*pCount_)));
+//       assert(pCount_);
+//       //*pCount_ = 1;
+//       ThreadingModel<RefCountedMT, MX>::AtomicAssign(*pCount_, 1);
+//     }
+//
+//     RefCountedMT(const RefCountedMT &rhs)
+//       : pCount_(rhs.pCount_)
+//     {}
+//
+//     // MWCW lacks template friends, hence the following kludge
+//     template<typename P1>
+//     RefCountedMT(const RefCountedMT<P1> &rhs)
+//       : pCount_(reinterpret_cast<const RefCountedMT<P> &>(rhs).pCount_)
+//     {}
+//
+//     P Clone(const P &val)
+//     {
+//       ThreadingModel<RefCountedMT, MX>::AtomicIncrement(*pCount_);
+//       return val;
+//     }
+//
+//     bool Release(const P &)
+//     {
+//       bool isZero = false;
+//       ThreadingModel<RefCountedMT, MX>::AtomicDecrement(*pCount_, 0, isZero);
+//       if (isZero) {
+//         SmallObject<LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL>::operator delete(
+//           const_cast<CountType *>(pCount_),
+//           sizeof(*pCount_));
+//         return true;
+//       }
+//       return false;
+//     }
+//
+//     void Swap(RefCountedMT &rhs)
+//     {
+//       std::swap(pCount_, rhs.pCount_);
+//     }
+//
+//     enum { destructiveCopy = false };
+//
+//   private:
+//     // Data
+//     CountPtrType pCount_;
+//   };
+// };
 
 ////////////////////////////////////////////////////////////////////////////////
 ///  \struct DeepCopy
@@ -583,6 +634,22 @@ public:
 ///  Implements deep copy semantics, assumes existence of a Clone() member
 ///  function of the pointee type
 ////////////////////////////////////////////////////////////////////////////////
+template<class T>
+constexpr auto is_false=true;
+
+template<class T>
+T* ClonePointer(T *p)
+{
+  if constexpr (std::is_scalar_v<T>) {
+    return new T(*p);
+  } else if constexpr (std::is_class_v<T>) {
+    return p->Clone();
+  } else {
+    static_assert(is_false<T>);
+    return nullptr;
+  }
+}
+
 
 template<class P>
 struct DeepCopy
@@ -596,7 +663,7 @@ struct DeepCopy
 
   static P Clone(const P &val)
   {
-    return val->Clone();
+    return ClonePointer(val);
   }
 
   static bool Release(const P &)
@@ -686,29 +753,24 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 template<class P>
-class DestructiveCopy
+class Unique
 {
 public:
-  DestructiveCopy()
-  {}
+  Unique() = default;
 
-  template<class P1>
-  DestructiveCopy(const DestructiveCopy<P1> &)
-    requires false
-  {}
 
-  DestructiveCopy(const DestructiveCopy<P> &)
+  Unique(const Unique<P> &)
     requires false
   = default;
 
   template<class P1>
   //  requires(!std::is_same_v<std::remove_cvref_t<P1>, std::remove_cvref_t<P>>)
-  DestructiveCopy(DestructiveCopy<P1> &&)
+  Unique(Unique<P1> &&)
   {
     std::cout << "DestructiveCopy move other cons\n";
   }
 
-  DestructiveCopy(DestructiveCopy<P> &&)
+  Unique(Unique<P> &&)
   {
     std::cout << "DestructiveCopy move cons\n";
   };
@@ -726,7 +788,7 @@ public:
     return true;
   }
 
-  static void Swap(DestructiveCopy &)
+  static void Swap(Unique &)
   {}
 
   enum { destructiveCopy = true };
@@ -744,23 +806,22 @@ template<class P>
 class NoCopy
 {
 public:
-  NoCopy()
-  {}
+  NoCopy()=default;
 
   NoCopy(const NoCopy<P> &)
     requires false
-  = default;
+  = delete;
 
   NoCopy(NoCopy<P> &&)
     requires false
-  = default;
+  = delete;
   template<class P1>
     requires false
   NoCopy(const NoCopy<P1> &) = delete;
 
   template<class P1>
     requires false
-  NoCopy(NoCopy<P1> &&);
+  NoCopy(NoCopy<P1> &&)=delete;
   static P Clone(const P &)
   {
     // Make it depended on template parameter
@@ -1092,7 +1153,7 @@ template<
   template<class> class OwnershipPolicy = RefCounted,
   template<class> class CheckingPolicy = AssertCheck,
   template<class> class StoragePolicy = DefaultSPStorage,
-  template<class> class ConstnessPolicy = LOKI_DEFAULT_CONSTNESS>
+  template<class> class ConstnessPolicy = ::Loki::DontPropagateConst>
 class SmartPtr;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1106,7 +1167,7 @@ template<
   template<class> class OwnershipPolicy = RefCounted,
   template<class> class CheckingPolicy = AssertCheck,
   template<class> class StoragePolicy = DefaultSPStorage,
-  template<class> class ConstnessPolicy = LOKI_DEFAULT_CONSTNESS>
+  template<class> class ConstnessPolicy = ::Loki::DontPropagateConst>
 struct SmartPtrDef
 {
   typedef SmartPtr<
@@ -1126,7 +1187,7 @@ struct SmartPtrDef
 ///  \param OwnershipPolicy  default =  RefCounted,
 ///  \param CheckingPolicy default = AssertCheck,
 ///  \param StoragePolicy default = DefaultSPStorage
-///  \param ConstnessPolicy default = LOKI_DEFAULT_CONSTNESS
+///  \param ConstnessPolicy default = ::Loki::DontPropagateConst
 ///
 ///  \par IMPORTANT NOTE
 ///  Due to threading issues, the OwnershipPolicy has been changed as follows:
@@ -1209,7 +1270,7 @@ public:
   template<
     typename T1>
   SmartPtr(SmartPtr<T1> &&rhs)
-    requires(!std::same_as<T, T1> && std::is_move_constructible_v<OP>)
+    requires(std::is_move_constructible_v<OP>)
     : SP(rhs), OP(std::move(rhs)), KP(rhs)
   {
     GetImplRef(*this) = OP::Clone(GetImplRef(rhs));
@@ -1217,6 +1278,7 @@ public:
 
 
   SmartPtr &operator=(SmartPtr &&rhs)
+    requires(std::is_move_constructible_v<OP>)
   {
     SmartPtr temp(std::move(rhs));
     return temp;
@@ -1225,6 +1287,7 @@ public:
   template<
     typename T1>
   SmartPtr &operator=(const SmartPtr<T1, OwnershipPolicy, CheckingPolicy, StoragePolicy, ConstnessPolicy> &rhs)
+    requires(std::is_copy_constructible_v<OP>)
   {
     SmartPtr temp(rhs);
     temp.Swap(*this);
@@ -1233,6 +1296,7 @@ public:
 
   template<typename T1>
   SmartPtr &operator=(SmartPtr<T1, OwnershipPolicy, CheckingPolicy, StoragePolicy, ConstnessPolicy> &&rhs)
+    requires(std::is_copy_constructible_v<OP>)
   {
     SmartPtr temp(std::move(rhs));
     return temp;
@@ -1301,7 +1365,7 @@ public:
     return GetImpl(*this) == nullptr;
   }
 
-  static inline T *GetPointer(const SmartPtr &sp)
+  friend inline T *GetPointer(const SmartPtr &sp)
   {
     return GetImpl(sp);
   }
@@ -1314,14 +1378,13 @@ public:
   }
 
   // Ambiguity buster
-  template<
-    typename T1>
+  template<typename T1>
   auto operator<=>(const SmartPtr<T1, OwnershipPolicy, CheckingPolicy, StoragePolicy, ConstnessPolicy> &rhs) const
   {
     return GetImpl(*this) <=> GetImpl(rhs);
   }
 
-  template<typename T1, class U>
+  template<class U>
   bool operator==(const U *rhs) const
   {
     return GetImpl(*this) == rhs;
@@ -1329,7 +1392,6 @@ public:
 
   // Ambiguity buster
   template<
-    typename T1,
     class U>
   auto operator<=>(const U *rhs) const
   {
