@@ -18,13 +18,13 @@
 // $Id: MultiMethods.h 751 2006-10-17 19:50:37Z syntheticpp $
 
 #include <boost/callable_traits.hpp>
+#include <boost/type_index.hpp>
 #include <tuple>
-#include "LokiTypeInfo.h"
 #include <boost/container/flat_map.hpp>
+#include <utility>
 #include <functional>
 #include <boost/mp11.hpp>
-#include "../pretty_function.h"
-#include "../priority_tag.hpp"
+#include "priority_tag.h"
 namespace ct = boost::callable_traits;
 namespace mp = boost::mp11;
 ////////////////////////////////////////////////////////////////////////////////
@@ -34,6 +34,7 @@ namespace mp = boost::mp11;
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace Loki {
+  using TypeInfo= boost::typeindex::type_index;
 ////////////////////////////////////////////////////////////////////////////////
 // class template InvocationTraits (helper)
 // Helps implementing optional symmetry
@@ -63,9 +64,7 @@ namespace Private {
 
 template<
   class Executor,
-  class BaseLhs,
   class OriginTypesLhs,
-  class BaseRhs = BaseLhs,
   class OriginTypesRhs = OriginTypesLhs,
   bool symmetric = false,
   typename ResultType = void>
@@ -75,6 +74,14 @@ class StaticDispatcher
     mp::mp_not_fn<std::is_base_of>::fn>;
   using TypeRhs = mp::mp_sort<OriginTypesRhs,
     mp::mp_not_fn<std::is_base_of>::fn>;
+  using BaseLhs = mp::mp_back<TypeLhs>;
+  using BaseRhs = mp::mp_back<TypeRhs>;
+  template<class T>
+  using IsBaseofBaseLhs=std::is_base_of<BaseLhs,T>;
+  template<class T>
+  using IsBaseofBaseRhs=std::is_base_of<BaseRhs,T>;
+  static_assert(mp::mp_all_of<TypeLhs, IsBaseofBaseLhs>::value);
+  static_assert(mp::mp_all_of<TypeRhs, IsBaseofBaseRhs>::value);
 
   template<class SomeLhs>
   static ResultType DispatchRhs(SomeLhs &lhs, BaseRhs &rhs, Executor exec, mp::mp_list<>)
@@ -152,13 +159,13 @@ public:
   template<class SomeLhs, class SomeRhs>
   void Add(CallbackType fun)
   {
-    DoAdd(typeid(SomeLhs), typeid(SomeRhs), fun);
+    DoAdd(boost::typeindex::type_id<SomeLhs>(), boost::typeindex::type_id<SomeRhs>(), fun);
   }
 
   template<class SomeLhs, class SomeRhs>
   bool Remove()
   {
-    return DoRemove(typeid(SomeLhs), typeid(SomeRhs));
+    return DoRemove(boost::typeindex::type_id<SomeLhs>(), boost::typeindex::type_id<SomeRhs>());
   }
 
   ResultType Go(BaseLhs &lhs, BaseRhs &rhs);
@@ -180,7 +187,7 @@ bool BasicDispatcher<BaseLhs, BaseRhs, ResultType, CallbackType>::DoRemove(TypeI
 template<class BaseLhs, class BaseRhs, typename ResultType, typename CallbackType>
 ResultType BasicDispatcher<BaseLhs, BaseRhs, ResultType, CallbackType>::Go(BaseLhs &lhs, BaseRhs &rhs)
 {
-  typename MapType::key_type k(typeid(lhs), typeid(rhs));
+  typename MapType::key_type k(boost::typeindex::type_id_runtime(lhs), boost::typeindex::type_id_runtime(rhs));
   typename MapType::iterator i = callbackMap_.find(k);
   if (i == callbackMap_.end()) {
     throw std::runtime_error("Function not found");
@@ -223,7 +230,8 @@ struct DynamicCaster
 
 namespace Private {
   template<class BaseLhs, class BaseRhs, class CastLhs, class CastRhs, auto Callback>
-  struct FnDispatcherHelper;
+  struct FnDispatcherHelper ;
+
   template<class BaseLhs, class BaseRhs, class CastLhs, class CastRhs, class SomeLhs, class SomeRhs, typename ResultType, ResultType (*Callback)(SomeLhs &, SomeRhs &)>
   struct FnDispatcherHelper<BaseLhs, BaseRhs, CastLhs, CastRhs, Callback>
   {
@@ -345,28 +353,8 @@ class FunctorDispatcher
 
   DispatcherBackend<BaseLhs, BaseRhs, ResultType, FunctorType> backEnd_;
 
-public:
-  template<class Fun>
-  void Add(const Fun &fun)
-  {
-    using Args = ct::args_t<Fun>;
-    static_assert(std::tuple_size_v<Args> == 2, "fun should have two params ");
-    Add<
-      std::remove_reference_t<std::tuple_element_t<0, Args>>,
-      std::remove_reference_t<std::tuple_element_t<1, Args>>>(fun);
-  }
-  template<bool symmetric, class Fun>
-  void Add(const Fun &fun)
-  {
-    using Args = ct::args_t<Fun>;
-    static_assert(std::tuple_size_v<Args> == 2, "fun should have two params ");
-    Add<
-      std::remove_reference_t<std::tuple_element_t<0, Args>>,
-      std::remove_reference_t<std::tuple_element_t<1, Args>>,
-      symmetric>(fun);
-  }
   template<class SomeLhs, class SomeRhs, class Fun>
-  void Add(const Fun &fun)
+  void AddImpl(const Fun &fun)
   {
     typedef Private::FunctorDispatcherHelper<
       BaseLhs,
@@ -383,9 +371,9 @@ public:
     backEnd_.template Add<SomeLhs, SomeRhs>(FunctorType(Adapter(fun)));
   }
   template<class SomeLhs, class SomeRhs, bool symmetric, class Fun>
-  void Add(const Fun &fun)
+  void AddImpl(const Fun &fun)
   {
-    Add<SomeLhs, SomeRhs>(fun);
+    AddImpl<SomeLhs, SomeRhs>(fun);
 
     if (symmetric) {
       // Note: symmetry only makes sense where BaseLhs==BaseRhs
@@ -402,6 +390,26 @@ public:
         AdapterR;
       backEnd_.template Add<SomeRhs, SomeLhs>(FunctorType(AdapterR(fun)));
     }
+  }
+public:
+  template<class Fun>
+  void Add(const Fun &fun)
+  {
+    using Args = ct::args_t<Fun>;
+    static_assert(std::tuple_size_v<Args> == 2, "fun should have two params ");
+    AddImpl<
+      std::remove_reference_t<std::tuple_element_t<0, Args>>,
+      std::remove_reference_t<std::tuple_element_t<1, Args>>>(fun);
+  }
+  template<bool symmetric, class Fun>
+  void Add(const Fun &fun)
+  {
+    using Args = ct::args_t<Fun>;
+    static_assert(std::tuple_size_v<Args> == 2, "fun should have two params ");
+    AddImpl<
+      std::remove_reference_t<std::tuple_element_t<0, Args>>,
+      std::remove_reference_t<std::tuple_element_t<1, Args>>,
+      symmetric>(fun);
   }
 
   template<class SomeLhs, class SomeRhs>

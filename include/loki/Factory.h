@@ -213,8 +213,8 @@ public:
   template<class T>
   bool Register(ProductCreator creator)
   {
-    return associations_.insert(
-                          typename IdToProductMap::value_type(boost::typeindex::type_id<T>(), creator))
+    return associations_.emplace(
+                          boost::typeindex::type_id<T>(), creator)
              .second
            != 0;
   }
@@ -222,7 +222,7 @@ public:
   template<class T>
   bool Unregister()
   {
-    return associations_.erase(typeid(T)) != 0;
+    return associations_.erase(boost::typeindex::type_id<T>()) != 0;
   }
 
   std::unique_ptr<AbstractProduct> CreateObject(const AbstractProduct *model)

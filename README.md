@@ -5,6 +5,7 @@ update andrei's loki lib to C++11
 - typelist算法改为使用mp11的算法。
 - 将typetraits部分改为直接使用C++11的type_traits
 - 将functor删除，改为使用C++11的std::function
+- 将TypeInfo，改为使用boost::typeindex::type_index
 
 简要对比loki11和loki
 以factory为例说明，Loki11工厂创建抽象对象只有一个成员模板
@@ -26,6 +27,7 @@ update andrei's loki lib to C++11
   - [visitor](#visitor)
   - [AbstractFactory](#abstractfactory)
   - [CloneFactory](#clonefactory)
+  - [SmartPtr](#smartptr)
 <!--/TOC-->
 
 
@@ -443,3 +445,177 @@ CloneFactory实作出以下基本操作:
       auto rc = cf.CreateObject(&c);
       rc->draw();
     }
+
+## SmartPtr
+
+SmartPtr声明如下:
+
+    template<
+      typename T,
+      template<class> class OwnershipPolicy = RefCounted,
+      template<class> class CheckingPolicy = AssertCheck,
+      template<class> class StoragePolicy = DefaultSPStorage,
+      template<class> class ConstnessPolicy = DontPropagateConst>
+    class SmartPtr;
+
+T是SmartPtr所指类型
+
+OwnerShipPolicy 所有权管理策略,可以是DeepCopy,RefCounted,RefCountedAtomic,RefLinked,Unique,NoCopy中的一个
+
+CheckingPolicy检查SmartPtr默认构造，用裸指针构造和提领前检查pointee。可以是NoCheck,AssertCheck,AssertCheckStrict,RejectNullStatic,RejectNull,RejectNullStrict中的一个.
+
+StoragePolicy 指明如何存储和访问pointee对象，可以是DefaultStorage,ArrayStorage和LockedStorage。
+
+ConstnessPolicy指明是否传播const语义，可以是DontPropagateConst或ProgagateConst
+
+例子:
+
+    #include <iostream>
+    #include <string>
+    #include <loki/SmartPtr.h>
+    #include <mutex>
+    #include <thread>
+
+
+    using namespace Loki;
+    using std::cout;
+    using std::endl;
+
+    struct Lock
+    {
+    public:
+      std::mutex m_;
+      int i_;
+      void lock()
+      {
+        cout << "lock\n";
+        m_.lock();
+      }
+      void unlock() {
+        cout << "unlock\n";
+        m_.unlock();
+      }
+      void set(int i)
+      {
+        i_=i;
+      }
+      int get() const {
+        return i_;
+      }
+    };
+
+    int main()
+    {
+      {
+        SmartPtr<int, Loki::RefCountedAtomic> s(new int(3));
+        auto s2 = s;
+        cout << *s << std::endl;
+        cout << *s2 << std::endl;
+      }
+      {
+        SmartPtr<int, Unique> s(new int(3));
+        auto s2 = std::move(s);
+        cout << *s2 << std::endl;
+        if (!s) {
+          cout << "source moved!" << std::endl;
+        }
+      }
+      {
+        SmartPtr<int, NoCopy> s(new int(3));
+        if (!s) {
+          cout << "source moved!" << std::endl;
+        }
+      }
+      {
+        SmartPtr<int, DeepCopy> s(new int(3));
+        auto b(s);
+        if (b) {
+          cout << "source copyed!" << *b << std::endl;
+        }
+      }
+      {
+        struct B
+        {
+          virtual B *Clone() const = 0;
+          virtual ~B() = default;
+        };
+        struct D : B
+        {
+          virtual D *Clone() const
+          {
+            cout << "cloned\n";
+            return new D(*this);
+          }
+        };
+        SmartPtr<B, DeepCopy> s(new D);
+        auto d(s);
+      }
+      {
+        struct B
+        {
+          B()
+          {
+            cout << "B()\n";
+          }
+          ~B()
+          {
+            cout << "~B()\n";
+          }
+          B(const B &)
+          {
+            cout << "B(const B)\n";
+          }
+          B &operator=(const B &)
+          {
+            cout << "B(const B)\n";
+            return *this;
+          }
+        };
+        SmartPtr<B, RefLinked> s(new B);
+        {
+
+          cout << "==B==\n";
+          auto d(s);
+        }
+        cout << "==C==\n";
+      }
+      {
+        SmartPtr<int, RefLinked, AssertCheck> s(nullptr);
+        {
+        }
+      }
+      {
+        SmartPtr<int, RefLinked, AssertCheck, ArrayStorage> s(new int[3]{1,2,3});
+        cout << "array"<<s[2] << endl;
+      }
+      {
+        SmartPtr<Lock, RefLinked, AssertCheck, LockedStorage> s(new Lock );
+        cout << "before deref\n";
+        s->i_=3;
+        cout << "after deref\n";
+      }
+      {
+        const SmartPtr<int, RefLinked, AssertCheck,DefaultSPStorage> s(new int{1});
+        cout << "DontPropagateConst"<<*s << endl;
+        *s=4;
+      }
+      {
+        const SmartPtr<int, RefLinked, AssertCheck,DefaultSPStorage,PropagateConst> s(new int{1});
+        cout << "PropagateConst"<<*s << endl;
+        cout<<*s<<endl;
+      }
+      {
+        SmartPtr<int, RefLinked, AssertCheck,DefaultSPStorage> s(new int{1});
+        SmartPtr<int, RefLinked, AssertCheck,DefaultSPStorage> sb(new int{1});
+        cout << "DontPropagateConst"<<(s==sb) << endl;
+        cout << "DontPropagateConst"<<(s<sb) << endl;
+      }
+      {
+        SmartPtr<int, RefLinked, AssertCheck,DefaultSPStorage> s(new int{1});
+        SmartPtr<int, RefLinked, AssertCheck,DefaultSPStorage> sb(new int{1});
+        cout << "DontPropagateConst"<<(!s) << endl;
+        cout << "DontPropagateConst"<<GetPointer(s) << endl;
+      }
+    }
+
+

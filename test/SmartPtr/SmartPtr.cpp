@@ -108,9 +108,7 @@ int main()
     cout << "==C==\n";
   }
   {
-    // SmartPtr<int, RefLinked, RejectNullStatic> s;
     SmartPtr<int, RefLinked, AssertCheck> s(nullptr);
-    // if (*s)
     {
     }
   }
@@ -132,7 +130,6 @@ int main()
   {
     const SmartPtr<int, RefLinked, AssertCheck,DefaultSPStorage,PropagateConst> s(new int{1});
     cout << "PropagateConst"<<*s << endl;
-    //*s=4; //fail
     cout<<*s<<endl;
   }
   {

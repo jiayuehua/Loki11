@@ -213,7 +213,7 @@ protected:
 
 private:
   // Data
-  StoredType pointee_;
+  StoredType pointee_=nullptr;
 };
 
 
@@ -1123,6 +1123,10 @@ struct RejectNullStrict
   RejectNullStrict(const RejectNull<P1> &)
   {}
 
+  static void OnDefault(P val)
+  {
+    throw NullPointerException();
+  }
   static void OnInit(P val)
   {
     if (!val) throw NullPointerException();
@@ -1270,7 +1274,7 @@ public:
   template<
     typename T1>
   SmartPtr(SmartPtr<T1> &&rhs)
-    requires(std::is_move_constructible_v<OP>)
+    requires(std::is_move_constructible_v<OP>&& !std::is_same_v<T,T1>&&std::is_constructible_v<T*,T1*>)
     : SP(rhs), OP(std::move(rhs)), KP(rhs)
   {
     GetImplRef(*this) = OP::Clone(GetImplRef(rhs));
@@ -1287,7 +1291,7 @@ public:
   template<
     typename T1>
   SmartPtr &operator=(const SmartPtr<T1, OwnershipPolicy, CheckingPolicy, StoragePolicy, ConstnessPolicy> &rhs)
-    requires(std::is_copy_constructible_v<OP>)
+    requires(std::is_copy_constructible_v<OP> && std::is_constructible_v<T*,T1*>)
   {
     SmartPtr temp(rhs);
     temp.Swap(*this);
@@ -1296,7 +1300,7 @@ public:
 
   template<typename T1>
   SmartPtr &operator=(SmartPtr<T1, OwnershipPolicy, CheckingPolicy, StoragePolicy, ConstnessPolicy> &&rhs)
-    requires(std::is_copy_constructible_v<OP>)
+    requires(std::is_copy_constructible_v<OP> && std::is_constructible_v<T*,T1*>)
   {
     SmartPtr temp(std::move(rhs));
     return temp;
@@ -1337,24 +1341,28 @@ public:
 
 
   PointerType operator->()
+    requires(requires { std::declval<SP &>().operator->(); })
   {
     KP::OnDereference(GetImplRef(*this));
     return SP::operator->();
   }
 
   ConstPointerType operator->() const
+    requires(requires { std::declval<const SP &>().operator->(); })
   {
     KP::OnDereference(GetImplRef(*this));
     return SP::operator->();
   }
 
   ReferenceType operator*()
+    requires(requires { std::declval<SP &>().operator*(); })
   {
     KP::OnDereference(GetImplRef(*this));
     return SP::operator*();
   }
 
   ConstReferenceType operator*() const
+    requires(requires { std::declval<const SP &>().operator*(); })
   {
     KP::OnDereference(GetImplRef(*this));
     return SP::operator*();
