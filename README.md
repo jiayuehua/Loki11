@@ -28,6 +28,7 @@ update andrei's loki lib to C++11
   - [AbstractFactory](#abstractfactory)
   - [CloneFactory](#clonefactory)
   - [SmartPtr](#smartptr)
+  - [MultiMethod](#multimethod)
 <!--/TOC-->
 
 
