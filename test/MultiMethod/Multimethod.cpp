@@ -32,16 +32,6 @@ struct Executor
     std::cout << "first first";
     std::cout << std::endl;
   }
-  void operator()(First, Second) const
-  {
-    std::cout << "first second";
-    std::cout << std::endl;
-  }
-  void operator()(First, Snd) const
-  {
-    std::cout << "first snd";
-    std::cout << std::endl;
-  }
   void operator()(Second, First) const
   {
     std::cout << "Second first";
@@ -50,11 +40,6 @@ struct Executor
   void operator()(Second, Second) const
   {
     std::cout << "Second second";
-    std::cout << std::endl;
-  }
-  void operator()(Second, Snd) const
-  {
-    std::cout << "Second snd";
     std::cout << std::endl;
   }
   void operator()(Snd, First) const
@@ -102,7 +87,7 @@ namespace mp = boost::mp11;
 int main()
 {
   {
-    Loki::StaticDispatcher<Executor, mp::mp_list<First, Second, Snd>, mp::mp_list<First, Second, Snd>> dis;
+    Loki::StaticDispatcher<Executor, mp::mp_list<First, Second, Snd>, mp::mp_list<First, Second, Snd>,true> dis;
     Executor e;
     First f;
     Second s;
@@ -120,15 +105,12 @@ int main()
   {
     First f;
     Second s;
+      std::cout << "start FnDispatcher\n";
     Loki::FnDispatcher<First> dis;
-    dis.Add<&firstfirst>();
-    dis.Add<&firstsecond>();
-    dis.Add<&secondsecond>();
-    dis.Add<&secondfirst>();
-    dis(f, f);
+    dis.Add<true,&firstsecond>();
     dis(f, s);
     dis(s, f);
-    dis(s, s);
+      std::cout << "end FnDispatcher\n";
   }
   {
     auto firstfirst = [](First &, First &) {
@@ -137,10 +119,6 @@ int main()
     };
     auto firstsecond = [](First &, Second &) {
       std::cout << "first second";
-      std::cout << std::endl;
-    };
-    auto secondfirst = [](Second &, First &) {
-      std::cout << "Second first";
       std::cout << std::endl;
     };
     Loki::FunctorDispatcher<First> func;

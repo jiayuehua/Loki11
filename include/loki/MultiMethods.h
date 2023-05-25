@@ -258,13 +258,13 @@ template<class BaseLhs, class BaseRhs = BaseLhs, typename ResultType = void, cla
 class FnDispatcher
 {
   DispatcherBackend<BaseLhs, BaseRhs, ResultType, ResultType (*)(BaseLhs &, BaseRhs &)> backEnd_;
-
-public:
   template<class SomeLhs, class SomeRhs>
   void AddBase(ResultType (*pFun)(BaseLhs &, BaseRhs &))
   {
     return backEnd_.template Add<SomeLhs, SomeRhs>(pFun);
   }
+
+public:
 
   template<auto callback>
   void Add()
@@ -280,7 +280,7 @@ public:
     AddBase<typename Local::LHS, typename Local::RHS>(&Local::Trampoline);
   }
 
-  template<auto callback, bool symmetric>
+  template<bool symmetric,auto callback>
   void Add(bool = true)// [gcc] dummy bool
   {
     typedef Private::FnDispatcherHelper<
@@ -291,9 +291,9 @@ public:
       callback>
       Local;
 
-    AddBase<Local::LHS, Local::RHS>(&Local::Trampoline);
+    AddBase<typename Local::LHS, typename Local::RHS>(&Local::Trampoline);
     if (symmetric) {
-      AddBase<Local::LHS, Local::RHS>(&Local::TrampolineR);
+      AddBase<typename Local::RHS, typename Local::LHS>(&Local::TrampolineR);
     }
   }
 
