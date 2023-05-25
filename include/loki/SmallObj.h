@@ -24,17 +24,10 @@
 #include <cstddef>
 #include <new>// needed for std::nothrow_t parameter.
 
-#ifndef LOKI_DEFAULT_CHUNK_SIZE
-#define LOKI_DEFAULT_CHUNK_SIZE 4096
-#endif
 
-#ifndef LOKI_MAX_SMALL_OBJECT_SIZE
-#define LOKI_MAX_SMALL_OBJECT_SIZE 256
-#endif
-
-#ifndef LOKI_DEFAULT_OBJECT_ALIGNMENT
-#define LOKI_DEFAULT_OBJECT_ALIGNMENT 4
-#endif
+static inline constexpr std::size_t LOKI_DEFAULT_CHUNK_SIZE =4096;
+static inline constexpr std::size_t LOKI_MAX_SMALL_OBJECT_SIZE =256;
+static inline constexpr std::size_t LOKI_DEFAULT_OBJECT_ALIGNMENT =4;
 
 #ifndef LOKI_DEFAULT_SMALLOBJ_LIFETIME
 #define LOKI_DEFAULT_SMALLOBJ_LIFETIME ::Loki::LongevityLifetime::DieAsSmallObjectParent
@@ -214,7 +207,7 @@ private:
      operators.
     */
 template<
-  template<class, class> class ThreadingModel = LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL,
+  template<class, class> class ThreadingModel = SingleThreaded,
   std::size_t chunkSize = LOKI_DEFAULT_CHUNK_SIZE,
   std::size_t maxSmallObjectSize = LOKI_MAX_SMALL_OBJECT_SIZE,
   std::size_t objectAlignSize = LOKI_DEFAULT_OBJECT_ALIGNMENT,
@@ -433,8 +426,6 @@ template<
 class SmallObjectBase
 {
 
-#if (LOKI_MAX_SMALL_OBJECT_SIZE != 0) && (LOKI_DEFAULT_CHUNK_SIZE != 0) && (LOKI_DEFAULT_OBJECT_ALIGNMENT != 0)
-
 public:
   /// Defines type of allocator singleton, must be public
   /// to handle singleton lifetime dependencies.
@@ -555,7 +546,6 @@ public:
   }
 #endif// #if use new array functions.
 
-#endif// #if default template parameters are not zero
 
 protected:
   inline SmallObjectBase(void) {}
@@ -578,7 +568,7 @@ protected:
      Empty-Base-Optimization.
      */
 template<
-  template<class, class> class ThreadingModel = LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL,
+  template<class, class> class ThreadingModel = SingleThreaded,
   std::size_t chunkSize = LOKI_DEFAULT_CHUNK_SIZE,
   std::size_t maxSmallObjectSize = LOKI_MAX_SMALL_OBJECT_SIZE,
   std::size_t objectAlignSize = LOKI_DEFAULT_OBJECT_ALIGNMENT,
@@ -612,7 +602,7 @@ private:
      Empty-Base-Optimization.
      */
 template<
-  template<class, class> class ThreadingModel = LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL,
+  template<class, class> class ThreadingModel = SingleThreaded,
   std::size_t chunkSize = LOKI_DEFAULT_CHUNK_SIZE,
   std::size_t maxSmallObjectSize = LOKI_MAX_SMALL_OBJECT_SIZE,
   std::size_t objectAlignSize = LOKI_DEFAULT_OBJECT_ALIGNMENT,

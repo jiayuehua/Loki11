@@ -719,13 +719,13 @@ typename FollowIntoDeath::Followers<T>::Container *
 ///  \param CreationPolicy Creation policy, default: CreateUsingNew
 ///  \param LifetimePolicy Lifetime policy, default: DefaultLifetime,
 ///  \param ThreadingModel Threading policy,
-///                         default: LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL
+///                         default: SingleThreaded
 ////////////////////////////////////////////////////////////////////////////////
 template<
   typename T,
   template<class> class CreationPolicy = CreateUsingNew,
   template<class> class LifetimePolicy = DefaultLifetime,
-  template<class, class> class ThreadingModel = LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL,
+  template<class, class> class ThreadingModel = SingleThreaded,
   class MutexPolicy = LOKI_DEFAULT_MUTEX>
 class SingletonHolder
 {

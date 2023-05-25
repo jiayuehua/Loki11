@@ -29,7 +29,7 @@ using namespace std;
 //
 // ----------------------------------------------------------------------------
 
-typedef Loki::SmallValueObject< LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL,
+typedef Loki::SmallValueObject< SingleThreaded,
     512, 32, 4, Loki::LongevityLifetime::DieAsSmallObjectParent
 >
 SmallObjectParent;
@@ -71,7 +71,7 @@ private:
 //
 // ----------------------------------------------------------------------------
 
-typedef Loki::SmallValueObject< LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL,
+typedef Loki::SmallValueObject< SingleThreaded,
     LOKI_DEFAULT_CHUNK_SIZE, LOKI_MAX_SMALL_OBJECT_SIZE,
     LOKI_DEFAULT_OBJECT_ALIGNMENT, 
     Loki::SingletonWithLongevity 
@@ -122,7 +122,7 @@ inline unsigned int GetLongevity( LongLivedSingleton * )
 //
 // ----------------------------------------------------------------------------
 
-typedef Loki::SmallValueObject< LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL,
+typedef Loki::SmallValueObject< SingleThreaded,
     LOKI_DEFAULT_CHUNK_SIZE, LOKI_MAX_SMALL_OBJECT_SIZE,
     LOKI_DEFAULT_OBJECT_ALIGNMENT, 
     Loki::FollowIntoDeath::With<Loki::DefaultLifetime>::AsMasterLifetime 
@@ -169,7 +169,7 @@ private:
 //
 // ----------------------------------------------------------------------------
 
-typedef Loki::SmallValueObject< LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL,
+typedef Loki::SmallValueObject< SingleThreaded,
     LOKI_DEFAULT_CHUNK_SIZE, LOKI_MAX_SMALL_OBJECT_SIZE,
     LOKI_DEFAULT_OBJECT_ALIGNMENT, Loki::NoDestroy >
 ImmortalObject;

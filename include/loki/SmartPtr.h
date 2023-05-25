@@ -577,7 +577,7 @@ private:
 //     RefCountedMT()
 //     {
 //       pCount_ = static_cast<CountPtrType>(
-//         SmallObject<LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL>::operator new(
+//         SmallObject<SingleThreaded>::operator new(
 //           sizeof(*pCount_)));
 //       assert(pCount_);
 //       //*pCount_ = 1;
@@ -605,7 +605,7 @@ private:
 //       bool isZero = false;
 //       ThreadingModel<RefCountedMT, MX>::AtomicDecrement(*pCount_, 0, isZero);
 //       if (isZero) {
-//         SmallObject<LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL>::operator delete(
+//         SmallObject<SingleThreaded>::operator delete(
 //           const_cast<CountType *>(pCount_),
 //           sizeof(*pCount_));
 //         return true;

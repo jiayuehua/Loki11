@@ -178,7 +178,7 @@ public:
 
 typedef Loki::SmallObject
 < 
-    LOKI_DEFAULT_THREADING_NO_OBJ_LEVEL,
+    SingleThreaded,
     LOKI_DEFAULT_CHUNK_SIZE, 
     LOKI_MAX_SMALL_OBJECT_SIZE,
     LOKI_DEFAULT_OBJECT_ALIGNMENT, 
